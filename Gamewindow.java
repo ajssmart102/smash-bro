@@ -19,12 +19,12 @@ public class Gamewindow extends JFrame {
         setResizable(false);
         setLocationRelativeTo(null);
 
-        gamestate = new Gamestate();
-        gamePanel = new GamePanel(gamestate);
+        Gamestate = new Gamestate();
+        GamePanel = new GamePanel(Gamestate);
         add(gamePanel);
 
         // Input handling
-        InputHandler input = new InputHandler(gamestate);
+        InputHandler input = new InputHandler(Gamestate);
         addKeyListener(input);
         setFocusable(true);
     }
