@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.Timer; // add: forces Timer to resolve to Swing, not java.util
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -10,7 +11,7 @@ public class Gamewindow extends JFrame {
 
     private GamePanel gamePanel;
     private Gamestate gamestate;
-    private Timer gameLoop;
+    private javax.swing.Timer gameLoop; // add: explicit type to avoid ambiguity
 
     public Gamewindow() {
         setTitle("Smash Bros Baseline");
@@ -19,20 +20,20 @@ public class Gamewindow extends JFrame {
         setResizable(false);
         setLocationRelativeTo(null);
 
-        gamestate = new Gamestate();       // fix: was "Gamestate ="
-        gamePanel = new GamePanel(gamestate); // fix: was "GamePanel =", wrong var name
+        gamestate = new Gamestate();
+        gamePanel = new GamePanel(gamestate);
         add(gamePanel);
 
-        InputHandler input = new InputHandler(gamestate); // fix: consistent casing
+        InputHandler input = new InputHandler(gamestate);
         addKeyListener(input);
         setFocusable(true);
-        setVisible(true); // fix: added so the window actually appears
+        setVisible(true);
     }
 
     public void startGame() {
         int delay = 1000 / TARGET_FPS;
-        gameLoop = new Timer(delay, e -> {
-            gamestate.update(); // fix: was "gameState" (wrong casing)
+        gameLoop = new javax.swing.Timer(delay, e -> { // add: explicit instantiation
+            gamestate.update();
             gamePanel.repaint();
         });
         gameLoop.start();
