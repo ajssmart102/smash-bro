@@ -56,9 +56,9 @@ class HitEffect {
 
 // ─── InputHandler ────────────────────────────────────────────────────────────
 class InputHandler extends KeyAdapter {
-    private GameState state;
+    private Gamestate state;
 
-    public InputHandler(GameState state) {
+    public InputHandler(Gamestate state) {
         this.state = state;
     }
 
@@ -68,11 +68,11 @@ class InputHandler extends KeyAdapter {
 
 // ─── GamePanel ───────────────────────────────────────────────────────────────
 class GamePanel extends JPanel {
-    private GameState state;
+    private Gamestate state;
     private static final Color BG_TOP    = new Color(15, 12, 35);
     private static final Color BG_BOTTOM = new Color(25, 20, 55);
 
-    public GamePanel(GameState state) {
+    public GamePanel(Gamestate state) {
         this.state = state;
         setPreferredSize(new Dimension(1280, 720));
         setBackground(BG_TOP);
