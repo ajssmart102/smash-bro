@@ -12,19 +12,19 @@ public class Gamewindow extends JFrame {
     private GameState gameState;
     private Timer gameLoop;
 
-    public GameWindow() {
+    public Gamewindow() {
         setTitle("Smash Bros Baseline");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         setLocationRelativeTo(null);
 
-        gameState = new GameState();
-        gamePanel = new GamePanel(gameState);
+        gamestate = new Gamestate();
+        gamePanel = new GamePanel(gamestate);
         add(gamePanel);
 
         // Input handling
-        InputHandler input = new InputHandler(gameState);
+        InputHandler input = new InputHandler(gamestate);
         addKeyListener(input);
         setFocusable(true);
     }
