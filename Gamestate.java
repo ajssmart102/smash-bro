@@ -3,7 +3,7 @@ import java.awt.event.KeyEvent;
 import java.util.*;
 import java.util.List;
 
-public class GameState {
+public class Gamestate {
     public static final int STAGE_LEFT   = 100;
     public static final int STAGE_RIGHT  = 1180;
     public static final int STAGE_TOP    = 400;   // platform surface Y
