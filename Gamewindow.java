@@ -9,7 +9,7 @@ public class Gamewindow extends JFrame {
     private static final int TARGET_FPS = 60;
 
     private GamePanel gamePanel;
-    private GameState gameState;
+    private Gamestate gamestate;
     private Timer gameLoop;
 
     public Gamewindow() {
