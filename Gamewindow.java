@@ -3,7 +3,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-public class GameWindow extends JFrame {
+public class Gamewindow extends JFrame {
     private static final int WIDTH = 1280;
     private static final int HEIGHT = 720;
     private static final int TARGET_FPS = 60;
