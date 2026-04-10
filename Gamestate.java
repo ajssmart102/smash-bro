@@ -21,7 +21,7 @@ public class Gamestate {
     // Input state (simple 2-player keyboard)
     public boolean[] keys = new boolean[65536]; // KeyEvent codes can exceed 255
 
-    public GameState() {
+    public Gamestate() {
         setupPlatforms();
         setupFighters();
     }
