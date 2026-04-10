@@ -1,6 +1,6 @@
 import javax.swing.*;
  
-public class SmashGame {
+public class Smashgame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             GameWindow window = new GameWindow();
