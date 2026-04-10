@@ -19,20 +19,20 @@ public class Gamewindow extends JFrame {
         setResizable(false);
         setLocationRelativeTo(null);
 
-        Gamestate = new Gamestate();
-        GamePanel = new GamePanel(Gamestate);
+        gamestate = new Gamestate();       // fix: was "Gamestate ="
+        gamePanel = new GamePanel(gamestate); // fix: was "GamePanel =", wrong var name
         add(gamePanel);
 
-        // Input handling
-        InputHandler input = new InputHandler(Gamestate);
+        InputHandler input = new InputHandler(gamestate); // fix: consistent casing
         addKeyListener(input);
         setFocusable(true);
+        setVisible(true); // fix: added so the window actually appears
     }
 
     public void startGame() {
         int delay = 1000 / TARGET_FPS;
         gameLoop = new Timer(delay, e -> {
-            gameState.update();
+            gamestate.update(); // fix: was "gameState" (wrong casing)
             gamePanel.repaint();
         });
         gameLoop.start();
