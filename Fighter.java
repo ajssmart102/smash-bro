@@ -15,10 +15,10 @@ public class Fighter {
     public float damage = 0;  // percentage
 
     // Movement constants
-    private static final float WALK_SPEED   = 5f;
-    private static final float JUMP_FORCE   = -14f;
-    private static final float AIR_FRICTION = 0.85f;
-    private static final float GROUND_FRICTION = 0.7f;
+    private static final float WALK_SPEED   = 8f;
+    private static final float JUMP_FORCE   = -18f;
+    private static final float AIR_FRICTION = 0.92f;
+    private static final float GROUND_FRICTION = 0.75f;
     private static final int   MAX_JUMPS    = 2;
 
     // State
