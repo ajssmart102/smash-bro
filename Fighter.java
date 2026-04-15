@@ -64,7 +64,12 @@ public class Fighter {
         if (respawnTimer > 0 || hitstunTimer > 0) return;
 
         // Crouch (must be first so it affects movement below)
-        isCrouching = onGround && keys[keyBindings[4]];
+        // Crouch — latch on when grounded, release when key is let go
+        if (keys[keyBindings[4]]) {
+            if (onGround) isCrouching = true;  // only START crouching on ground
+        } else {
+            isCrouching = false;               // always release when key is up
+        }
         
         // Horizontal movement
         float speed = isCrouching ? WALK_SPEED * 0.3f : WALK_SPEED;
