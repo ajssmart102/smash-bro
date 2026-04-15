@@ -38,11 +38,11 @@ public class Gamestate {
 
     private void setupFighters() {
         // Player 1: WASD + F to attack
-        Fighter p1 = new Fighter(400, 400, Color.decode("#3A86FF"), "P1",
-                new int[]{KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F});
+        int[] p1Keys = { KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F, KeyEvent.VK_S };
+        Fighter p1 = new Fighter(400, 400, Color.decode("#3A86FF"), "P1", p1Keys);
         // Player 2: Arrow keys + L to attack
-        Fighter p2 = new Fighter(800, 400, Color.decode("#FF006E"), "P2",
-                new int[]{KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L});
+        int[] p2Keys = { KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L, KeyEvent.VK_DOWN };
+        Fighter p2 = new Fighter(800, 400, Color.decode("#FF006E"), "P2", p2Keys);
         fighters.add(p1);
         fighters.add(p2);
     }

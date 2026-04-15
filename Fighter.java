@@ -43,6 +43,11 @@ public class Fighter {
     private int respawnTimer = 0;
     private static final float SPAWN_X = 640, SPAWN_Y = 200;
 
+    // Crouching state
+    private boolean isCrouching = false;
+    private static final int CROUCH_HEIGHT = 40; // half normal height
+    private static final int NORMAL_HEIGHT = 70;
+
     public Fighter(float x, float y, Color color, String name, int[] keyBindings) {
         this.x = x;
         this.y = y;
@@ -51,26 +56,34 @@ public class Fighter {
         this.keyBindings = keyBindings;
     }
 
+    public Fighter(int i, int j, Color decode, String string, int vkLeft, int vkRight, int vkUp, int vkL, int vkDown) {
+        //TODO Auto-generated constructor stub
+    }
+
     public void handleInput(boolean[] keys) {
         if (respawnTimer > 0 || hitstunTimer > 0) return;
 
+        // Crouch (must be first so it affects movement below)
+        isCrouching = onGround && keys[keyBindings[4]];
+        
         // Horizontal movement
-        if (keys[keyBindings[0]]) { velX -= WALK_SPEED; facingDir = -1; }
-        if (keys[keyBindings[1]]) { velX += WALK_SPEED; facingDir = 1; }
+        float speed = isCrouching ? WALK_SPEED * 0.3f : WALK_SPEED;
+        if (keys[keyBindings[0]]) { velX -= speed; facingDir = -1; }
+        if (keys[keyBindings[1]]) { velX += speed; facingDir =  1; }    
 
         // Jump
-        if (keys[keyBindings[2]] && jumpsLeft > 0) {
-            velY = JUMP_FORCE;
-            jumpsLeft--;
-            onGround = false;
-            keys[keyBindings[2]] = false; // consume key to prevent repeat
-        }
+        if (keys[keyBindings[2]] && jumpsLeft > 0 && !isCrouching) {
+        velY = JUMP_FORCE;
+        jumpsLeft--;
+        onGround = false;
+        keys[keyBindings[2]] = false;
+    }
 
         // Attack
         if (keys[keyBindings[3]] && attackTimer == 0 && attackCooldown == 0) {
-            attackTimer = ATTACK_DURATION;
-            hitThisAttack.clear();
-        }
+        attackTimer = ATTACK_DURATION;
+        hitThisAttack.clear();
+    }
     }
 
     public void applyGravity(float gravity) {
@@ -78,8 +91,12 @@ public class Fighter {
     }
 
     public void move() {
-        if (respawnTimer > 0) { respawnTimer--; return; }
-        if (hitstunTimer > 0) hitstunTimer--;
+    if (respawnTimer > 0) { respawnTimer--; return; }
+
+    // Update height FIRST so collisions use the right value
+    height = isCrouching ? CROUCH_HEIGHT : NORMAL_HEIGHT;
+
+    if (hitstunTimer > 0) hitstunTimer--;
 
         // Friction
         if (onGround) velX *= GROUND_FRICTION;
@@ -170,9 +187,15 @@ public class Fighter {
             if ((respawnTimer / 5) % 2 == 0) return;
         }
 
-        // Body
-        g.setColor(color);
-        g.fillRoundRect((int) x, (int) y, width, height, 10, 10);
+        // Body — squish when crouching
+            g.setColor(color);
+            if (isCrouching) {
+                // Wider and shorter when crouched
+                g.fillRoundRect((int) x - 5, (int) y + (NORMAL_HEIGHT - CROUCH_HEIGHT),
+                                width + 10, CROUCH_HEIGHT, 10, 10);
+            } else {
+                g.fillRoundRect((int) x, (int) y, width, height, 10, 10);
+            }
 
         // Face direction dot
         g.setColor(Color.WHITE);
