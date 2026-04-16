@@ -2,7 +2,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.*;
 
-public class Gamestate {
+public class GameState {
     public java.util.List<Fighter> fighters = new ArrayList<>();
     public java.util.List<Platform> platforms = new ArrayList<>();
     public java.util.List<HitEffect> effects = new ArrayList<>();
