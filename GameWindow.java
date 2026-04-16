@@ -1,39 +1,60 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 public class GameWindow extends JFrame {
-    private Gamestate state = new Gamestate();
+    private Gamestate state;
+    private GamePanel gamePanel;
+    private CharacterSelectPanel menuPanel;
 
     public GameWindow() {
-        state.setupSession("Tank"); // Hardcoded for now
-        
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D)g;
-                for (Platform p : state.platforms) p.draw(g2);
-                for (Fighter f : state.fighters) f.draw(g2);
-                for (HitEffect e : state.effects) e.draw(g2);
-            }
-        };
-
-        addKeyListener(new KeyAdapter() {
-            @Override public void keyPressed(KeyEvent e) { if(e.getKeyCode()<256) state.keys[e.getKeyCode()] = true; }
-            @Override public void keyReleased(KeyEvent e) { if(e.getKeyCode()<256) state.keys[e.getKeyCode()] = false; }
-        });
-
-        add(panel);
+        setTitle("Java Smash");
         setSize(1280, 720);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setVisible(true);
+        setLocationRelativeTo(null);
+        setResizable(false);
 
+        showMenu(); // Start at the character select screen
+        setVisible(true);
+    }
+
+    private void showMenu() {
+        // Create the menu and give it a "callback" (what to do when a button is clicked)
+        menuPanel = new CharacterSelectPanel(choice -> {
+            startGame(choice);
+        });
+        
+        getContentPane().removeAll();
+        add(menuPanel);
+        revalidate();
+        repaint();
+    }
+
+    private void startGame(String characterChoice) {
+        state = new Gamestate();
+        state.setupSession(characterChoice); // Pass the choice to the state
+
+        gamePanel = new GamePanel(state);
+        
+        // Remove menu and add game
+        getContentPane().removeAll();
+        add(gamePanel);
+        
+        // Input handling
+        addKeyListener(new InputHandler(state));
+        setFocusable(true);
+        requestFocusInWindow();
+
+        revalidate();
+        repaint();
+
+        // The Game Loop
         new Timer(16, e -> {
             state.update();
-            panel.repaint();
+            gamePanel.repaint();
         }).start();
     }
 
-    public static void main(String[] args) { new GameWindow(); }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new GameWindow());
+    }
 }
