@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.List;
 
 public class Gamestate {
-    // ... (Keep all your STAGE and BLAST_ZONE constants here) ...
+    // Stage Constants
     public static final int STAGE_LEFT   = 100;
     public static final int STAGE_RIGHT  = 1180;
     public static final int STAGE_TOP    = 400;
@@ -15,6 +15,7 @@ public class Gamestate {
     public static final float BLAST_ZONE_BOTTOM = 900;
     public static final float BLAST_ZONE_TOP    = -200;
 
+    // Game Objects
     public List<Fighter> fighters = new ArrayList<>();
     public List<Platform> platforms = new ArrayList<>();
     public List<HitEffect> effects = new ArrayList<>();
@@ -22,15 +23,14 @@ public class Gamestate {
     private int currentMap = 0;
 
     public Gamestate() {
-        // We leave setupFighters out of the constructor now
-        // because we want to wait for the user choice.
+        // Just a safety initialization
         setupPlatforms(0);
     }
 
-    // UPDATED: Called by Gamewindow to start the game with the right data
     public void initSession(int mapIndex, String characterName) {
         this.currentMap = mapIndex;
         
+        // Clear all old data
         fighters.clear();
         platforms.clear();
         effects.clear();
@@ -40,29 +40,35 @@ public class Gamestate {
     }
 
     private void setupPlatforms(int mapIndex) {
-        // ... (Keep your existing switch case for platforms here) ...
+        platforms.clear();
         switch (mapIndex) {
-            case 0: platforms.add(new Platform(200, 500, 880, 20)); break;
-            // ... add the rest of your cases ...
-            default: platforms.add(new Platform(200, 500, 880, 20)); break;
+            case 0: // Final Destination
+                platforms.add(new Platform(200, 500, 880, 20)); 
+                break;
+            case 1: // Battlefield
+                platforms.add(new Platform(200, 500, 880, 20));
+                platforms.add(new Platform(150, 380, 280, 15));
+                platforms.add(new Platform(850, 380, 280, 15));
+                platforms.add(new Platform(490, 280, 300, 15));
+                break;
+            default:
+                platforms.add(new Platform(200, 500, 880, 20));
+                break;
         }
     }
 
-    // UPDATED: Now creates fighters based on the choice
     private void setupFighters(String p1Choice) {
         int[] p1Keys = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F};
         int[] p2Keys = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L};
 
-        // Logic to create P1 based on selection
         Fighter p1;
-        if (p1Choice.equals("Tank")) {
-            p1 = new TankFighter(400, 400, Color.decode("#3A86FF"), "P1 (Tank)", p1Keys);
+        // Check for null and use equalsIgnoreCase for safety
+        if (p1Choice != null && p1Choice.equalsIgnoreCase("Tank")) {
+            p1 = new TankFighter(400, 400, Color.decode("#3A86FF"), "P1", p1Keys);
         } else {
-            // Default Fighter
             p1 = new Fighter(400, 400, Color.decode("#3A86FF"), "P1", p1Keys);
         }
 
-        // You can add logic for P2 as well, or keep it as a standard fighter for now
         Fighter p2 = new Fighter(800, 400, Color.decode("#FF006E"), "P2", p2Keys);
 
         fighters.add(p1);
@@ -70,7 +76,7 @@ public class Gamestate {
     }
 
     public void update() {
-        // ... (Keep your existing update() logic for movement and collision) ...
+        // 1. Movement & Physics
         for (Fighter f : fighters) {
             f.handleInput(keys);
             f.applyGravity(GRAVITY);
@@ -79,30 +85,45 @@ public class Gamestate {
             f.checkBlastZone(BLAST_ZONE_LEFT, BLAST_ZONE_RIGHT, BLAST_ZONE_BOTTOM, BLAST_ZONE_TOP);
         }
 
-        // Combat logic
+        // 2. Combat & Collision Detection
         for (int i = 0; i < fighters.size(); i++) {
             Fighter attacker = fighters.get(i);
-            for (int j = 0; j < fighters.size(); j++) {
-                if (i == j) continue;
-                Fighter target = fighters.get(j);
-                if (attacker.isAttacking() && attacker.getHitbox() != null
-                        && attacker.getHitbox().intersects(target.getBounds())) {
-                    if (!target.isHitstun() && !attacker.hasAlreadyHit(target)) {
-                        target.receiveHit(attacker.getAttackDamage(), attacker.getKnockback(target));
-                        attacker.markHit(target);
-                        effects.add(new HitEffect(
-                                (int) target.x + target.width / 2,
-                                (int) target.y + target.height / 2));
+            
+            // CRITICAL FIX: Check if getHitbox() is null BEFORE calling intersects()
+            Rectangle hitbox = attacker.getHitbox();
+            
+            if (attacker.isAttacking() && hitbox != null) {
+                for (int j = 0; j < fighters.size(); j++) {
+                    if (i == j) continue; 
+                    
+                    Fighter target = fighters.get(j);
+                    
+                    if (hitbox.intersects(target.getBounds())) {
+                        if (!target.isHitstun() && !attacker.hasAlreadyHit(target)) {
+                            target.receiveHit(attacker.getAttackDamage(), attacker.getKnockback(target));
+                            attacker.markHit(target);
+                            
+                            // Center the hit effect on the target
+                            effects.add(new HitEffect(
+                                (int) (target.x + target.width / 2),
+                                (int) (target.y + target.height / 2)));
+                        }
                     }
                 }
             }
         }
 
+        // 3. Effects cleanup
         effects.removeIf(e -> !e.isAlive());
-        effects.forEach(HitEffect::update);
+        for (HitEffect e : effects) {
+            e.update();
+        }
     }
 
-    // Keep your getter/setter
-    public void setMap(int mapIndex) { this.currentMap = mapIndex; setupPlatforms(mapIndex); }
+    public void setMap(int mapIndex) { 
+        this.currentMap = mapIndex; 
+        setupPlatforms(mapIndex); 
+    }
+    
     public int getMap() { return currentMap; }
 }
