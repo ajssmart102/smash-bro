@@ -5,6 +5,8 @@ import javax.swing.*;
 // ─── Platform ────────────────────────────────────────────────────────────────
 class Platform {
     public int x, y, width, height;
+    public boolean isSoft;
+    public boolean isHard;
 
     public Platform(int x, int y, int width, int height) {
         this.x = x;

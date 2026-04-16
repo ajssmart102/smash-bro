@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.util.*;
 
 public class Fighter {
@@ -33,10 +32,11 @@ public class Fighter {
     private int attackCooldown = 0;
     private Set<Fighter> hitThisAttack = new HashSet<>();
 
-    // Hitstun
+    // Hitstun & Drop-through
     private int hitstunTimer = 0;
+    private int dropThroughTimer = 0; // Tracks how long to ignore platforms
 
-    // Key bindings: [left, right, jump, attack]
+    // Key bindings: [left, right, jump, attack, crouch]
     private int[] keyBindings;
 
     // For spawning after losing a stock
@@ -57,14 +57,13 @@ public class Fighter {
     }
 
     public Fighter(int i, int j, Color decode, String string, int vkLeft, int vkRight, int vkUp, int vkL, int vkDown) {
-        //TODO Auto-generated constructor stub
+        this(i, j, decode, string, new int[]{vkLeft, vkRight, vkUp, vkL, vkDown});
     }
 
     public void handleInput(boolean[] keys) {
         if (respawnTimer > 0 || hitstunTimer > 0) return;
 
         // Crouch (must be first so it affects movement below)
-        // Crouch — latch on when grounded, release when key is let go
         if (keys[keyBindings[4]]) {
             if (onGround) isCrouching = true;  // only START crouching on ground
         } else {
@@ -76,19 +75,28 @@ public class Fighter {
         if (keys[keyBindings[0]]) { velX -= speed; facingDir = -1; }
         if (keys[keyBindings[1]]) { velX += speed; facingDir =  1; }    
 
-        // Jump
-        if (keys[keyBindings[2]] && jumpsLeft > 0 && !isCrouching) {
-        velY = JUMP_FORCE;
-        jumpsLeft--;
-        onGround = false;
-        keys[keyBindings[2]] = false;
-    }
+        // Jump AND Drop-Through Logic
+        if (keys[keyBindings[2]]) {
+            if (isCrouching && onGround) {
+                // Drop through instead of jumping
+                dropThroughTimer = 12; // Ignore platform collisions for 12 frames
+                onGround = false;
+                isCrouching = false;
+                keys[keyBindings[2]] = false; // consume key
+            } else if (jumpsLeft > 0 && !isCrouching) {
+                // Normal jump
+                velY = JUMP_FORCE;
+                jumpsLeft--;
+                onGround = false;
+                keys[keyBindings[2]] = false; // consume key
+            }
+        }
 
         // Attack
         if (keys[keyBindings[3]] && attackTimer == 0 && attackCooldown == 0) {
-        attackTimer = ATTACK_DURATION;
-        hitThisAttack.clear();
-    }
+            attackTimer = ATTACK_DURATION;
+            hitThisAttack.clear();
+        }
     }
 
     public void applyGravity(float gravity) {
@@ -96,12 +104,20 @@ public class Fighter {
     }
 
     public void move() {
-    if (respawnTimer > 0) { respawnTimer--; return; }
+        if (respawnTimer > 0) { respawnTimer--; return; }
+        if (hitstunTimer > 0) hitstunTimer--;
+        if (dropThroughTimer > 0) dropThroughTimer--;
 
-    // Update height FIRST so collisions use the right value
-    height = isCrouching ? CROUCH_HEIGHT : NORMAL_HEIGHT;
+        // Track previous height to adjust Y correctly when crouching/standing
+        boolean wasCrouching = height == CROUCH_HEIGHT;
+        height = isCrouching ? CROUCH_HEIGHT : NORMAL_HEIGHT;
 
-    if (hitstunTimer > 0) hitstunTimer--;
+        // Y-axis compensation for changing hitbox size (prevents floating)
+        if (isCrouching && !wasCrouching) {
+            y += (NORMAL_HEIGHT - CROUCH_HEIGHT); // Push down when shrinking
+        } else if (!isCrouching && wasCrouching) {
+            y -= (NORMAL_HEIGHT - CROUCH_HEIGHT); // Pull up when growing
+        }
 
         // Friction
         if (onGround) velX *= GROUND_FRICTION;
@@ -124,7 +140,20 @@ public class Fighter {
 
     public void collideWithPlatforms(java.util.List<Platform> platforms) {
         onGround = false;
+        
         for (Platform p : platforms) {
+            
+            if (dropThroughTimer > 0  && p.isHard)
+            {
+                onGround = false;
+                return;
+            }
+            // If dropping through AND the platform is soft, skip collision for this platform
+            if (dropThroughTimer > 0 && p.isSoft)
+            {
+                continue; 
+            }
+
             // Simple top-surface landing
             if (velY >= 0
                     && x + width > p.x && x < p.x + p.width
@@ -152,6 +181,8 @@ public class Fighter {
         y = SPAWN_Y;
         respawnTimer = 120;  // 2 seconds at 60fps
         hitstunTimer = 0;
+        isCrouching = false;
+        height = NORMAL_HEIGHT;
     }
 
     public void receiveHit(float dmg, float[] knockback) {
@@ -177,9 +208,9 @@ public class Fighter {
 
     public Rectangle getHitbox() {
         if (!isAttacking()) return null;
-        // Hitbox extends in facing direction
         int hx = facingDir == 1 ? (int) x + width : (int) x - 55;
-        return new Rectangle(hx, (int) y + 10, 55, 50);
+        int attackY = isCrouching ? (int) y : (int) y + 10;
+        return new Rectangle(hx, attackY, 55, 50);
     }
 
     public Rectangle getBounds() {
@@ -188,24 +219,22 @@ public class Fighter {
 
     public void draw(Graphics2D g) {
         if (respawnTimer > 0) {
-            // Flicker during respawn invincibility
             if ((respawnTimer / 5) % 2 == 0) return;
         }
 
-        // Body — squish when crouching
-            g.setColor(color);
-            if (isCrouching) {
-                // Wider and shorter when crouched
-                g.fillRoundRect((int) x - 5, (int) y + (NORMAL_HEIGHT - CROUCH_HEIGHT),
-                                width + 10, CROUCH_HEIGHT, 10, 10);
-            } else {
-                g.fillRoundRect((int) x, (int) y, width, height, 10, 10);
-            }
+        // Body — dynamic height is handled in move(), so we just draw the box!
+        g.setColor(color);
+        if (isCrouching) {
+            g.fillRoundRect((int) x - 5, (int) y, width + 10, height, 10, 10);
+        } else {
+            g.fillRoundRect((int) x, (int) y, width, height, 10, 10);
+        }
 
         // Face direction dot
         g.setColor(Color.WHITE);
         int eyeX = facingDir == 1 ? (int) x + width - 15 : (int) x + 10;
-        g.fillOval(eyeX, (int) y + 15, 12, 12);
+        int eyeY = isCrouching ? (int) y + 10 : (int) y + 15;
+        g.fillOval(eyeX, eyeY, 12, 12);
 
         // Hitbox (debug, semi-transparent)
         if (isAttacking() && getHitbox() != null) {
