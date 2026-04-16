@@ -1,3 +1,8 @@
+To fully integrate the character selection, we need to update the initGame method to use the new initSession logic we added to your Gamestate.java. This ensures the game doesn't just load the map, but also spawns the specific fighter chosen by the player.
+
+Here is your updated Gamewindow.java with the proper connection to the new Gamestate logic:
+
+Java
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -27,7 +32,6 @@ public class Gamewindow extends JFrame {
 
     private void showMapSelect() {
         MapSelectScreen mapSelect = new MapSelectScreen((mapIndex, mapName) -> {
-            // Once map is picked, move to character selection
             showCharacterSelect(mapIndex);
         });
 
@@ -38,9 +42,7 @@ public class Gamewindow extends JFrame {
     }
 
     private void showCharacterSelect(int mapIndex) {
-        // Create the character selection screen
         CharacterSelectScreen charSelect = new CharacterSelectScreen((charName) -> {
-            // Once character is picked, initialize the game with BOTH choices
             getContentPane().removeAll();
             initGame(mapIndex, charName);
             revalidate();
@@ -54,18 +56,18 @@ public class Gamewindow extends JFrame {
     }
 
     private void initGame(int mapIndex, String charName) {
+        // 1. Initialize Gamestate
         gamestate = new Gamestate();
         
-        // Pass selections to your gamestate
-        gamestate.setMap(mapIndex); 
-        // Assuming your Gamestate has a setCharacter method:
-        // gamestate.setCharacter(charName); 
+        // 2. Call the new initSession method to set the map AND spawn the chosen fighter
+        gamestate.initSession(mapIndex, charName); 
 
+        // 3. Setup the Panel
         gamePanel = new GamePanel(gamestate);
         add(gamePanel);
 
-        // Handle Input
-        // Note: Remove old KeyListeners to prevent "ghost" inputs from previous screens
+        // 4. Handle Input Cleanup
+        // Removing old listeners is critical so menu clicks don't interfere with movement
         for (KeyListener kl : getKeyListeners()) {
             removeKeyListener(kl);
         }
@@ -76,11 +78,11 @@ public class Gamewindow extends JFrame {
         setFocusable(true);
         requestFocusInWindow();
 
+        // 5. Start the engine
         startGame();
     }
 
     public void startGame() {
-        // Stop any existing loop if re-running
         if (gameLoop != null && gameLoop.isRunning()) {
             gameLoop.stop();
         }
