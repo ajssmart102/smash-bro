@@ -1,8 +1,4 @@
-To fully integrate the character selection, we need to update the initGame method to use the new initSession logic we added to your Gamestate.java. This ensures the game doesn't just load the map, but also spawns the specific fighter chosen by the player.
 
-Here is your updated Gamewindow.java with the proper connection to the new Gamestate logic:
-
-Java
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
