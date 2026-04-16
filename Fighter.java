@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class Fighter {
     // Change to protected so subclasses (like Mario) can access them
@@ -99,6 +100,56 @@ public class Fighter {
         if (attackTimer <= 0) return null;
         int hx = facingDir == 1 ? (int) x + width : (int) x - 55;
         return new Rectangle(hx, (int) y + 10, 55, 50);
+    }
+
+    public void draw(Graphics2D g) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'draw'");
+    }
+
+    public void applyGravity(float gravity) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'applyGravity'");
+    }
+
+    public void collideWithPlatforms(List<Platform> platforms) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'collideWithPlatforms'");
+    }
+
+    public void checkBlastZone(float blastZoneLeft, float blastZoneRight, float blastZoneBottom, float blastZoneTop) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'checkBlastZone'");
+    }
+
+    public boolean isAttacking() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isAttacking'");
+    }
+
+    public Rectangle getBounds() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBounds'");
+    }
+
+    public boolean hasAlreadyHit(Fighter target) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'hasAlreadyHit'");
+    }
+
+    public boolean isHitstun() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isHitstun'");
+    }
+
+    public void receiveHit(float attackDamage, float[] knockback) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'receiveHit'");
+    }
+
+    public void markHit(Fighter target) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'markHit'");
     }
     
     // Existing methods (collideWithPlatforms, draw, etc.) remain the same...
