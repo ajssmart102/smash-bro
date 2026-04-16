@@ -1,95 +1,108 @@
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.KeyEvent;
 import java.util.*;
+import java.util.List;
 
-public class Gamewindow extends JFrame {
-    private static final int WIDTH = 1280;
-    private static final int HEIGHT = 720;
-    private static final int TARGET_FPS = 60;
+public class Gamestate {
+    // ... (Keep all your STAGE and BLAST_ZONE constants here) ...
+    public static final int STAGE_LEFT   = 100;
+    public static final int STAGE_RIGHT  = 1180;
+    public static final int STAGE_TOP    = 400;
+    public static final int STAGE_FLOOR  = 410;
+    public static final float GRAVITY    = 0.5f;
+    public static final float BLAST_ZONE_LEFT   = -200;
+    public static final float BLAST_ZONE_RIGHT  = 1480;
+    public static final float BLAST_ZONE_BOTTOM = 900;
+    public static final float BLAST_ZONE_TOP    = -200;
 
-    private GamePanel gamePanel;
-    private Gamestate gamestate;
-    private javax.swing.Timer gameLoop;
+    public List<Fighter> fighters = new ArrayList<>();
+    public List<Platform> platforms = new ArrayList<>();
+    public List<HitEffect> effects = new ArrayList<>();
+    public boolean[] keys = new boolean[65536];
+    private int currentMap = 0;
 
-    public Gamewindow() {
-        setTitle("Smash Bros Baseline");
-        setSize(WIDTH, HEIGHT);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        setLocationRelativeTo(null);
-
-        // Flow: Map Select -> Character Select -> Game Start
-        showMapSelect();
-
-        setVisible(true);
+    public Gamestate() {
+        // We leave setupFighters out of the constructor now
+        // because we want to wait for the user choice.
+        setupPlatforms(0);
     }
 
-    private void showMapSelect() {
-        MapSelectScreen mapSelect = new MapSelectScreen((mapIndex, mapName) -> {
-            // Once map is picked, move to character selection
-            showCharacterSelect(mapIndex);
-        });
-
-        getContentPane().removeAll();
-        add(mapSelect);
-        revalidate();
-        repaint();
-    }
-
-    private void showCharacterSelect(int mapIndex) {
-        // Create the character selection screen
-        CharacterSelectScreen charSelect = new CharacterSelectScreen((charName) -> {
-            // Once character is picked, initialize the game with BOTH choices
-            getContentPane().removeAll();
-            initGame(mapIndex, charName);
-            revalidate();
-            repaint();
-        });
-
-        getContentPane().removeAll();
-        add(charSelect);
-        revalidate();
-        repaint();
-    }
-
-    private void initGame(int mapIndex, String charName) {
-        gamestate = new Gamestate();
+    // UPDATED: Called by Gamewindow to start the game with the right data
+    public void initSession(int mapIndex, String characterName) {
+        this.currentMap = mapIndex;
         
-        // Pass selections to your gamestate
-        gamestate.setMap(mapIndex); 
-        // Assuming your Gamestate has a setCharacter method:
-        // gamestate.setCharacter(charName); 
+        fighters.clear();
+        platforms.clear();
+        effects.clear();
 
-        gamePanel = new GamePanel(gamestate);
-        add(gamePanel);
+        setupPlatforms(mapIndex);
+        setupFighters(characterName);
+    }
 
-        // Handle Input
-        // Note: Remove old KeyListeners to prevent "ghost" inputs from previous screens
-        for (KeyListener kl : getKeyListeners()) {
-            removeKeyListener(kl);
+    private void setupPlatforms(int mapIndex) {
+        // ... (Keep your existing switch case for platforms here) ...
+        switch (mapIndex) {
+            case 0: platforms.add(new Platform(200, 500, 880, 20)); break;
+            // ... add the rest of your cases ...
+            default: platforms.add(new Platform(200, 500, 880, 20)); break;
         }
-        
-        InputHandler input = new InputHandler(gamestate);
-        addKeyListener(input);
-        
-        setFocusable(true);
-        requestFocusInWindow();
-
-        startGame();
     }
 
-    public void startGame() {
-        // Stop any existing loop if re-running
-        if (gameLoop != null && gameLoop.isRunning()) {
-            gameLoop.stop();
+    // UPDATED: Now creates fighters based on the choice
+    private void setupFighters(String p1Choice) {
+        int[] p1Keys = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F};
+        int[] p2Keys = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L};
+
+        // Logic to create P1 based on selection
+        Fighter p1;
+        if (p1Choice.equals("Tank")) {
+            p1 = new TankFighter(400, 400, Color.decode("#3A86FF"), "P1 (Tank)", p1Keys);
+        } else {
+            // Default Fighter
+            p1 = new Fighter(400, 400, Color.decode("#3A86FF"), "P1", p1Keys);
         }
 
-        int delay = 1000 / TARGET_FPS;
-        gameLoop = new javax.swing.Timer(delay, e -> {
-            gamestate.update();
-            gamePanel.repaint();
-        });
-        gameLoop.start();
+        // You can add logic for P2 as well, or keep it as a standard fighter for now
+        Fighter p2 = new Fighter(800, 400, Color.decode("#FF006E"), "P2", p2Keys);
+
+        fighters.add(p1);
+        fighters.add(p2);
     }
+
+    public void update() {
+        // ... (Keep your existing update() logic for movement and collision) ...
+        for (Fighter f : fighters) {
+            f.handleInput(keys);
+            f.applyGravity(GRAVITY);
+            f.move();
+            f.collideWithPlatforms(platforms);
+            f.checkBlastZone(BLAST_ZONE_LEFT, BLAST_ZONE_RIGHT, BLAST_ZONE_BOTTOM, BLAST_ZONE_TOP);
+        }
+
+        // Combat logic
+        for (int i = 0; i < fighters.size(); i++) {
+            Fighter attacker = fighters.get(i);
+            for (int j = 0; j < fighters.size(); j++) {
+                if (i == j) continue;
+                Fighter target = fighters.get(j);
+                if (attacker.isAttacking() && attacker.getHitbox() != null
+                        && attacker.getHitbox().intersects(target.getBounds())) {
+                    if (!target.isHitstun() && !attacker.hasAlreadyHit(target)) {
+                        target.receiveHit(attacker.getAttackDamage(), attacker.getKnockback(target));
+                        attacker.markHit(target);
+                        effects.add(new HitEffect(
+                                (int) target.x + target.width / 2,
+                                (int) target.y + target.height / 2));
+                    }
+                }
+            }
+        }
+
+        effects.removeIf(e -> !e.isAlive());
+        effects.forEach(HitEffect::update);
+    }
+
+    // Keep your getter/setter
+    public void setMap(int mapIndex) { this.currentMap = mapIndex; setupPlatforms(mapIndex); }
+    public int getMap() { return currentMap; }
 }
