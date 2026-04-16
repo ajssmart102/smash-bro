@@ -1,10 +1,12 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyListener;
 
 public class GameWindow extends JFrame {
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
+    private Timer gameLoop;
 
     public GameWindow() {
         setTitle("Java Smash");
@@ -13,12 +15,11 @@ public class GameWindow extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
 
-        showMenu(); // Start at the character select screen
+        showMenu(); 
         setVisible(true);
     }
 
     private void showMenu() {
-        // Create the menu and give it a "callback" (what to do when a button is clicked)
         menuPanel = new CharacterSelectPanel(choice -> {
             startGame(choice);
         });
@@ -30,28 +31,42 @@ public class GameWindow extends JFrame {
     }
 
     private void startGame(String characterChoice) {
+        // 1. Initialize State
         state = new Gamestate();
-        state.setupSession(characterChoice); // Pass the choice to the state
+        state.setupSession(characterChoice); 
 
+        // 2. Create and Configure Panel
         gamePanel = new GamePanel(state);
-        
-        // Remove menu and add game
+        gamePanel.setFocusable(true); // Allow it to receive keys
+
+        // 3. Clean up the Window
         getContentPane().removeAll();
         add(gamePanel);
-        
-        // Input handling
-        addKeyListener(new InputHandler(state));
-        setFocusable(true);
-        requestFocusInWindow();
 
+        // 4. Reset Input Listeners (Prevents double-speed or ghost inputs)
+        for (KeyListener kl : getKeyListeners()) {
+            removeKeyListener(kl);
+        }
+        InputHandler input = new InputHandler(state);
+        addKeyListener(input);
+
+        // 5. Finalize Layout
         revalidate();
         repaint();
 
-        // The Game Loop
-        new Timer(16, e -> {
+        // 6. Force Focus (Use invokeLater to wait for the UI to settle)
+        SwingUtilities.invokeLater(() -> {
+            gamePanel.requestFocusInWindow();
+            requestFocus(); 
+        });
+
+        // 7. Start/Restart Game Loop
+        if (gameLoop != null) gameLoop.stop();
+        gameLoop = new Timer(16, e -> {
             state.update();
             gamePanel.repaint();
-        }).start();
+        });
+        gameLoop.start();
     }
 
     public static void main(String[] args) {
