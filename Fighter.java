@@ -2,105 +2,82 @@ import java.awt.*;
 import java.util.*;
 
 public class Fighter {
-    // Change to protected so subclasses (like Mario) can access them
-    protected float x, y;
-    protected int width = 50, height = 70;
-    protected float velX = 0, velY = 0;
-    protected Color color;
-    protected String name;
-    protected int facingDir = 1;
+    public float x, y, velX, velY;
+    public int width = 50, height = 80;
+    public String name;
+    public Color color;
+    public int facingDir = 1; // 1 = Right, -1 = Left
 
-    // Movement Stats (These can now be overridden)
-    protected float walkSpeed = 8f;
+    // Stats (Can be overridden by subclasses)
+    protected float walkSpeed = 7f;
     protected float jumpForce = -14f;
+    protected float gravity = 0.5f;
     protected int maxJumps = 2;
-    protected int jumpsLeft = maxJumps;
+    protected int jumpsLeft = 2;
 
-    // Combat Stats
-    protected float damage = 0;
-    protected int stocks = 3;
+    // Combat
+    public float damage = 0;
+    public int stocks = 3;
     protected int attackTimer = 0;
-    protected int attackCooldown = 0;
-    protected Set<Fighter> hitThisAttack = new HashSet<>();
-    protected int hitstunTimer = 0;
+    protected Set<Fighter> hitTargets = new HashSet<>();
 
-    // New: Unique Move Stats
-    protected int attackDuration = 15;
-    protected int attackCooldownMax = 25;
-    protected float baseDamage = 8f;
+    protected int[] keys; // [Left, Right, Jump, Attack]
 
-    private int[] keyBindings;
-    public boolean onGround = false;
-    private int respawnTimer = 0;
-    private static final float SPAWN_X = 640, SPAWN_Y = 200;
-
-    public Fighter(float x, float y, Color color, String name, int[] keyBindings) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.name = name;
-        this.keyBindings = keyBindings;
+    public Fighter(float x, float y, String name, Color color, int[] keys) {
+        this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
     }
 
-    public void handleInput(boolean[] keys) {
-        if (respawnTimer > 0 || hitstunTimer > 0) return;
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
+        // Movement
+        if (keyMap[keys[0]]) { velX = -walkSpeed; facingDir = -1; }
+        else if (keyMap[keys[1]]) { velX = walkSpeed; facingDir = 1; }
+        else { velX *= 0.8f; } // Friction
 
-        // Horizontal movement using walkSpeed variable
-        if (keys[keyBindings[0]]) { velX -= walkSpeed; facingDir = -1; }
-        if (keys[keyBindings[1]]) { velX += walkSpeed; facingDir = 1; }
-
-        // Jump using jumpForce variable
-        if (keys[keyBindings[2]] && jumpsLeft > 0) {
+        // Jump
+        if (keyMap[keys[2]] && jumpsLeft > 0) {
             velY = jumpForce;
             jumpsLeft--;
-            onGround = false;
-            keys[keyBindings[2]] = false; 
+            keyMap[keys[2]] = false; // Prevent auto-repeat
         }
 
-        // Attack trigger
-        if (keys[keyBindings[3]] && attackTimer == 0 && attackCooldown == 0) {
-            startAttack();
+        // Attack
+        if (keyMap[keys[3]] && attackTimer <= 0) {
+            attackTimer = 20;
+            hitTargets.clear();
         }
-    }
 
-    // Overridable attack logic
-    protected void startAttack() {
-        attackTimer = attackDuration;
-        hitThisAttack.clear();
-    }
-
-    public void move() {
-        if (respawnTimer > 0) { respawnTimer--; return; }
-        if (hitstunTimer > 0) hitstunTimer--;
-
-        float friction = onGround ? 0.75f : 0.92f;
-        velX *= friction;
-        velX = Math.max(-10, Math.min(10, velX));
-
+        // Physics
+        velY += gravity;
         x += velX;
         y += velY;
 
-        if (attackTimer > 0) attackTimer--;
-        if (attackCooldown > 0) attackCooldown--;
-        if (attackTimer == 0 && attackCooldown == 0 && !hitThisAttack.isEmpty()) {
-            attackCooldown = attackCooldownMax;
-            hitThisAttack.clear();
+        // Platform Collision
+        for (Platform p : platforms) {
+            if (velY > 0 && x + width > p.x && x < p.x + p.width &&
+                y + height >= p.y && y + height <= p.y + p.height + velY) {
+                y = p.y - height;
+                velY = 0;
+                jumpsLeft = maxJumps;
+            }
         }
+
+        if (attackTimer > 0) attackTimer--;
     }
 
-    // --- Getters for unique character traits ---
-    public float getAttackDamage() { return baseDamage; }
-
-    public float[] getKnockback(Fighter target) {
-        return new float[]{facingDir * 6f, -8f};
-    }
+    public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
     public Rectangle getHitbox() {
-        if (attackTimer <= 0) return null;
-        int hx = facingDir == 1 ? (int) x + width : (int) x - 55;
-        return new Rectangle(hx, (int) y + 10, 55, 50);
+        if (attackTimer < 5 || attackTimer > 15) return null; // Active frames
+        int hx = (facingDir == 1) ? (int)x + width : (int)x - 60;
+        return new Rectangle(hx, (int)y + 20, 60, 40);
     }
-    
-    // Existing methods (collideWithPlatforms, draw, etc.) remain the same...
-    // [Keep your existing collideWithPlatforms, checkBlastZone, loseStock, receiveHit, and draw methods here]
+
+    public void draw(Graphics2D g) {
+        g.setColor(color);
+        g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
+        if (getHitbox() != null) {
+            g.setColor(new Color(255, 255, 0, 150));
+            g.fill(getHitbox());
+        }
+    }
 }
