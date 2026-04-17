@@ -36,31 +36,33 @@ public class GameWindow extends JFrame {
 
         // 2. Create and Configure Panel
         gamePanel = new GamePanel(state);
-        
+        gamePanel.setFocusable(true); // Must be focusable BEFORE adding listeners
+
         // 3. Clean up the Window
         getContentPane().removeAll();
         add(gamePanel);
 
         // 4. Setup Input Handler
-        // Attach the listener to the PANEL, not the frame.
-        // This avoids the need to manually clear listeners from the JFrame.
+        // Ensure you pass 'state' to the handler so it can move the character!
         InputHandler input = new InputHandler(state);
         gamePanel.addKeyListener(input);
-        gamePanel.setFocusable(true);
 
         // 5. Finalize Layout
         revalidate();
         repaint();
 
-        // 6. Force Focus
-        // We only need the panel to be focused to receive the keys.
-        gamePanel.requestFocusInWindow();
+        // 6. Force Focus (Aggressive method)
+        // Sometimes requestFocusInWindow fails if called too fast. 
+        // invokeLater ensures the UI is finished rendering first.
+        SwingUtilities.invokeLater(() -> {
+            gamePanel.requestFocusInWindow();
+        });
 
         // 7. Start/Restart Game Loop
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
             state.update();
-            gamePanel.repaint();
+            gamePanel.repaint(); // Redraw the graphics
         });
         gameLoop.start();
     }
