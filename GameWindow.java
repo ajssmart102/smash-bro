@@ -32,17 +32,19 @@ public class GameWindow extends JFrame {
     }
 
     private void startGame(String characterChoice) {
+        // 1. Initialize State
         state = new Gamestate();
         state.setupSession(characterChoice); 
 
+        // 2. Create and Configure Panel
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 
 
+        // 3. Clean up the Window
         getContentPane().removeAll();
         add(gamePanel);
 
-        // --- THE PERMANENT FIX ---
-        // We define the logic RIGHT HERE. No more "Undefined" errors!
+        // 4. Setup Input Logic (No external file needed)
         gamePanel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -61,13 +63,16 @@ public class GameWindow extends JFrame {
             }
         });
 
+        // 5. Finalize Layout
         revalidate();
         repaint();
 
+        // 6. Force Focus
         SwingUtilities.invokeLater(() -> {
             gamePanel.requestFocusInWindow();
         });
 
+        // 7. Start Game Loop
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
             state.update();
