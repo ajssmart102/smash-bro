@@ -28,12 +28,12 @@ public class Gamestate {
 
     private void setupPlatforms() {
         // Main platform
-        platforms.add(new Platform(200, 500, 880, 20));
+        platforms.add(new Platform(200, 500, 880, 20, false));
         // Side platforms
-        platforms.add(new Platform(150, 380, 280, 15));
-        platforms.add(new Platform(850, 380, 280, 15));
+        platforms.add(new Platform(150, 380, 280, 15, true));
+        platforms.add(new Platform(850, 380, 280, 15, true));
         // Top platform
-        platforms.add(new Platform(490, 280, 300, 15));
+        platforms.add(new Platform(490, 280, 300, 15, true));
     }
 
     private void setupFighters() {

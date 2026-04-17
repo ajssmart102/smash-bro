@@ -4,23 +4,26 @@ import javax.swing.*;
 
 // ─── Platform ────────────────────────────────────────────────────────────────
 class Platform {
-    public int x, y, width, height;
-    public boolean isSoft;
-    public boolean isHard;
+    public float x, y;
+    public int width, height;
+    public boolean isSoft; // The secret sauce for falling through!
 
-    public Platform(int x, int y, int width, int height) {
+    public Platform(float x, float y, int width, int height, boolean isSoft) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.isSoft = isSoft;
     }
 
     public void draw(Graphics2D g) {
-        g.setColor(new Color(60, 60, 80));
-        g.fillRoundRect(x, y, width, height, 8, 8);
-        g.setColor(new Color(100, 100, 140));
-        g.setStroke(new BasicStroke(2));
-        g.drawRoundRect(x, y, width, height, 8, 8);
+        // Just so you can see the difference visually
+        if (isSoft) {
+            g.setColor(new Color(100, 150, 255, 150)); // Semi-transparent blue for soft
+        } else {
+            g.setColor(Color.DARK_GRAY); // Solid grey for hard ground
+        }
+        g.fillRect((int) x, (int) y, width, height);
     }
 }
 

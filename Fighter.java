@@ -143,7 +143,7 @@ public class Fighter {
         
         for (Platform p : platforms) {
             
-            if (dropThroughTimer > 0  && p.isHard)
+            if (dropThroughTimer > 0)
             {
                 onGround = false;
                 return;
