@@ -4,36 +4,25 @@ import java.awt.event.KeyEvent;
 public class InputHandler extends KeyAdapter {
     private Gamestate state;
 
-    // This constructor matches the "new InputHandler(state)" in your Window code
     public InputHandler(Gamestate state) {
         this.state = state;
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
-        int key = e.getKeyCode();
-
-        // Map your keys to your Gamestate methods
-        if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) {
-            state.setMovingLeft(true);
-        }
-        if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
-            state.setMovingRight(true);
-        }
-        if (key == KeyEvent.VK_SPACE || key == KeyEvent.VK_W) {
-            state.jump();
+        int code = e.getKeyCode();
+        // Set the boolean to true in the Gamestate array
+        if (code >= 0 && code < state.keys.length) {
+            state.keys[code] = true;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        int key = e.getKeyCode();
-
-        if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) {
-            state.setMovingLeft(false);
-        }
-        if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
-            state.setMovingRight(false);
+        int code = e.getKeyCode();
+        // Set the boolean to false when the key is let go
+        if (code >= 0 && code < state.keys.length) {
+            state.keys[code] = false;
         }
     }
 }
