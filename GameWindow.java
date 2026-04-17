@@ -15,12 +15,16 @@ public class GameWindow extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
+
         showMenu(); 
         setVisible(true);
     }
 
     private void showMenu() {
-        menuPanel = new CharacterSelectPanel(choice -> startGame(choice));
+        menuPanel = new CharacterSelectPanel(choice -> {
+            startGame(choice);
+        });
+        
         getContentPane().removeAll();
         add(menuPanel);
         revalidate();
@@ -37,14 +41,32 @@ public class GameWindow extends JFrame {
         getContentPane().removeAll();
         add(gamePanel);
 
-        // This will now work because the class is defined below
-        InputHandler input = new InputHandler(state);
-        gamePanel.addKeyListener(input);
+        // --- THE PERMANENT FIX ---
+        // We define the logic RIGHT HERE. No more "Undefined" errors!
+        gamePanel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                int code = e.getKeyCode();
+                if (code >= 0 && code < state.keys.length) {
+                    state.keys[code] = true;
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                int code = e.getKeyCode();
+                if (code >= 0 && code < state.keys.length) {
+                    state.keys[code] = false;
+                }
+            }
+        });
 
         revalidate();
         repaint();
 
-        SwingUtilities.invokeLater(() -> gamePanel.requestFocusInWindow());
+        SwingUtilities.invokeLater(() -> {
+            gamePanel.requestFocusInWindow();
+        });
 
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
@@ -56,30 +78,5 @@ public class GameWindow extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new GameWindow());
-    }
-}
-
-// --- PUT THIS AT THE BOTTOM OF THE SAME FILE ---
-class InputHandler extends KeyAdapter {
-    private Gamestate state;
-
-    public InputHandler(Gamestate state) {
-        this.state = state;
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        int code = e.getKeyCode();
-        if (code >= 0 && code < state.keys.length) {
-            state.keys[code] = true;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        int code = e.getKeyCode();
-        if (code >= 0 && code < state.keys.length) {
-            state.keys[code] = false;
-        }
     }
 }
