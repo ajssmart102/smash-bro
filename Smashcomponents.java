@@ -8,7 +8,7 @@ class Platform {
     public int width, height;
     public boolean isSoft; // The secret sauce for falling through!
 
-    public Platform(float x, float y, int width, int height, boolean isSoft) {
+    public Platform(int x, int y, int width, int height, boolean isSoft) {
         this.x = x;
         this.y = y;
         this.width = width;
