@@ -1,9 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener; // Import the listener interface
 
-public class GameWindow extends JFrame {
+// We add "implements KeyListener" to the class itself
+public class GameWindow extends JFrame implements KeyListener {
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
@@ -32,53 +33,56 @@ public class GameWindow extends JFrame {
     }
 
     private void startGame(String characterChoice) {
-        // 1. Initialize State
         state = new Gamestate();
         state.setupSession(characterChoice); 
 
-        // 2. Create and Configure Panel
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 
 
-        // 3. Clean up the Window
         getContentPane().removeAll();
         add(gamePanel);
 
-        // 4. Setup Input Logic (No external file needed)
-        gamePanel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                int code = e.getKeyCode();
-                if (code >= 0 && code < state.keys.length) {
-                    state.keys[code] = true;
-                }
-            }
+        // Instead of a new class, we tell the panel that THIS window
+        // will handle the key presses.
+        gamePanel.addKeyListener(this);
 
-            @Override
-            public void keyReleased(KeyEvent e) {
-                int code = e.getKeyCode();
-                if (code >= 0 && code < state.keys.length) {
-                    state.keys[code] = false;
-                }
-            }
-        });
-
-        // 5. Finalize Layout
         revalidate();
         repaint();
 
-        // 6. Force Focus
         SwingUtilities.invokeLater(() -> {
             gamePanel.requestFocusInWindow();
         });
 
-        // 7. Start Game Loop
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
             state.update();
             gamePanel.repaint();
         });
         gameLoop.start();
+    }
+
+    // --- KEY LISTENER METHODS (Built directly into GameWindow) ---
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int code = e.getKeyCode();
+        // Directly update the state's keys array
+        if (state != null && code >= 0 && code < state.keys.length) {
+            state.keys[code] = true;
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        int code = e.getKeyCode();
+        if (state != null && code >= 0 && code < state.keys.length) {
+            state.keys[code] = false;
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // Not used for games, but required to be here
     }
 
     public static void main(String[] args) {
