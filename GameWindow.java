@@ -1,3 +1,6 @@
+Here is your updated GameWindow code. I have integrated the fix for the constructor error and added the invokeLater focus trick to ensure your keyboard input works the moment the game starts.
+
+Java
 import javax.swing.*;
 import java.awt.*;
 
@@ -36,14 +39,14 @@ public class GameWindow extends JFrame {
 
         // 2. Create and Configure Panel
         gamePanel = new GamePanel(state);
-        gamePanel.setFocusable(true); 
+        gamePanel.setFocusable(true); // Panel must be focusable to hear keys
 
         // 3. Clean up the Window
         getContentPane().removeAll();
         add(gamePanel);
 
         // 4. Setup Input Handler
-        // We pass 'state' so the handler can reach 'state.keys'
+        // FIX: Passed 'state' to the constructor so it can access state.keys
         InputHandler input = new InputHandler(state);
         gamePanel.addKeyListener(input);
 
@@ -52,12 +55,13 @@ public class GameWindow extends JFrame {
         repaint();
 
         // 6. Force Focus
-        // We wait for the UI to settle before grabbing the keyboard
+        // We use invokeLater to ensure the panel has actually been 
+        // rendered on screen before we try to grab the keyboard focus.
         SwingUtilities.invokeLater(() -> {
             gamePanel.requestFocusInWindow();
         });
 
-        // 7. Start Game Loop
+        // 7. Start/Restart Game Loop
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
             state.update();
