@@ -1,6 +1,4 @@
-Here is your updated GameWindow code. I have integrated the fix for the constructor error and added the invokeLater focus trick to ensure your keyboard input works the moment the game starts.
 
-Java
 import javax.swing.*;
 import java.awt.*;
 
