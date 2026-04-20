@@ -18,17 +18,19 @@ public class Gamestate {
 
         platforms.add(new Platform(200, 500, 880, 30)); 
         
-        int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F};
-        int[] p2Bindings = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L};
+        // Add the 5th key (Crouch) to the end of the arrays
+        int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F, KeyEvent.VK_S};
+        int[] p2Bindings = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L, KeyEvent.VK_DOWN};
 
         if (p1Char.equalsIgnoreCase("Tank")) {
+            // These will now receive the 5-slot array
             fighters.add(new TankFighter(300, 300, "P1", Color.BLUE, p1Bindings));
         } else {
             fighters.add(new Fighter(300, 300, "P1", Color.BLUE, p1Bindings));
         }
-        
+
         fighters.add(new Fighter(800, 300, "P2", Color.RED, p2Bindings));
-    }
+            }
 
     public void update() {
         for (Fighter f : fighters) {

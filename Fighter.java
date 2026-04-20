@@ -8,6 +8,10 @@ public class Fighter {
     public Color color;
     public int facingDir = 1; // 1 = Right, -1 = Left
 
+    public boolean isCrouching = false;
+    protected int normalHeight = 80;
+    protected int crouchHeight = 40;
+    
     // Stats (Can be overridden by subclasses)
     protected float walkSpeed = 7f;
     protected float jumpForce = -14f;
@@ -28,10 +32,32 @@ public class Fighter {
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
-        // Movement
-        if (keyMap[keys[0]]) { velX = -walkSpeed; facingDir = -1; }
-        else if (keyMap[keys[1]]) { velX = walkSpeed; facingDir = 1; }
-        else { velX *= 0.8f; } // Friction
+        // Check for Crouch Input (Assume index 4 is the Down key)
+        // Only allow crouching if touching the ground (jumpsLeft == maxJumps)
+        if (keyMap[keys[4]] && jumpsLeft == maxJumps) {
+            if (!isCrouching) {
+                isCrouching = true;
+                y += (normalHeight - crouchHeight); // Shift Y down so feet stay on ground
+                height = crouchHeight;
+            }
+        } else {
+            if (isCrouching) {
+                isCrouching = false;
+                y -= (normalHeight - crouchHeight); // Shift Y up to grow back to normal
+                height = normalHeight;
+            }
+        }
+        
+        // Movement (Prevent or slow down movement while crouching)
+        if (keyMap[keys[0]]) { 
+            velX = isCrouching ? -walkSpeed * 0.3f : -walkSpeed; 
+            facingDir = -1; 
+        }
+        else if (keyMap[keys[1]]) { 
+            velX = isCrouching ? walkSpeed * 0.3f : walkSpeed; 
+            facingDir = 1; 
+        }
+        else { velX *= 0.8f; }
 
         // Jump
         if (keyMap[keys[2]] && jumpsLeft > 0) {
@@ -51,13 +77,19 @@ public class Fighter {
         x += velX;
         y += velY;
 
-        // Platform Collision
-        for (Platform p : platforms) {
+        // Platform Collision section
+        for (Platform p : platforms) 
+        {
+            // We check velY > 0 so collision only happens when falling
             if (velY > 0 && x + width > p.x && x < p.x + p.width &&
-                y + height >= p.y && y + height <= p.y + p.height + velY) {
-                y = p.y - height;
+                y + height >= p.y && y + height <= p.y + p.height + velY)
+            {
+                
+                // This is the key: 'height' here will be 40 if crouching 
+                // or 80 if standing, keeping you glued to the floor.
+                y = p.y - height; 
                 velY = 0;
-                jumpsLeft = maxJumps;
+                jumpsLeft = maxJumps; // Refreshes jumps and allows crouching
             }
         }
 
@@ -66,10 +98,19 @@ public class Fighter {
 
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
-    public Rectangle getHitbox() {
+    public Rectangle getHitbox() 
+    {
         if (attackTimer < 5 || attackTimer > 15) return null; // Active frames
+        
         int hx = (facingDir == 1) ? (int)x + width : (int)x - 60;
-        return new Rectangle(hx, (int)y + 20, 60, 40);
+
+        // --- STEP 4: Adjust the Y position of the hitbox based on crouching ---
+        // If crouching, we set the hitbox 5 pixels from the top of the crouched head.
+        // If standing, we keep it at the original 20 pixels.
+        int hy = isCrouching ? (int)y + 5 : (int)y + 20; 
+        // ----------------------------------------------------------------------
+
+        return new Rectangle(hx, hy, 60, 40);
     }
 
     public void draw(Graphics2D g) {
