@@ -16,7 +16,13 @@ public class Gamestate {
         platforms.clear();
         effects.clear();
 
-        platforms.add(new Platform(200, 500, 880, 30)); 
+        platforms.add(new Platform(200, 500, 880, 30));
+        // Platform 1: Placed 150 pixels higher and offset to the left
+        platforms.add(new Platform(300, 350, 200, 30));
+        // Platform 2: Placed 300 pixels higher and offset to the right
+        platforms.add(new Platform(550, 200, 200, 30)); 
+        // Platform 3: Placed 150 pixels higher and offset to the right
+        platforms.add(new Platform(800, 350, 200, 30));
         
         int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F};
         int[] p2Bindings = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L};
