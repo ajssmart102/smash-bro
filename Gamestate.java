@@ -24,8 +24,11 @@ public class Gamestate {
         // Platform 3: Placed 150 pixels higher and offset to the right
         platforms.add(new Platform(800, 350, 200, 30));
         
-        int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F};
-        int[] p2Bindings = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_L};
+        // UPDATED: Added VK_S as the 4th key (Down) for Player 1
+        int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_F};
+        
+        // UPDATED: Added VK_DOWN as the 4th key (Down) for Player 2
+        int[] p2Bindings = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_L};
 
         if (p1Char.equalsIgnoreCase("Tank")) {
             fighters.add(new TankFighter(300, 300, "P1", Color.BLUE, p1Bindings));
