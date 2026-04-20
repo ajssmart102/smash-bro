@@ -20,8 +20,14 @@ public class Fighter {
     public int stocks = 3;
     protected int attackTimer = 0;
     protected Set<Fighter> hitTargets = new HashSet<>();
+    
+    // NEW: Enum to define our attack directions
+    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN }
+    protected AttackType currentAttack = AttackType.NONE;
 
-    protected int[] keys; // [Left, Right, Jump, Attack]
+    // UPDATED: Added a "Down" key at index 3. 
+    // New format: [Left, Right, Jump, Down, Attack]
+    protected int[] keys; 
 
     public Fighter(float x, float y, String name, Color color, int[] keys) {
         this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
@@ -40,10 +46,21 @@ public class Fighter {
             keyMap[keys[2]] = false; // Prevent auto-repeat
         }
 
-        // Attack
-        if (keyMap[keys[3]] && attackTimer <= 0) {
+        // Attack (Notice keys[4] is now the attack key)
+        if (keyMap[keys[4]] && attackTimer <= 0) {
             attackTimer = 20;
             hitTargets.clear();
+            
+            // NEW: Determine which directional attack to use
+            if (keyMap[keys[3]]) {
+                currentAttack = AttackType.DOWN;
+            } else if (keyMap[keys[2]]) {
+                currentAttack = AttackType.UP;
+            } else if (keyMap[keys[0]] || keyMap[keys[1]]) {
+                currentAttack = AttackType.SIDE;
+            } else {
+                currentAttack = AttackType.NEUTRAL;
+            }
         }
 
         // Physics
@@ -61,22 +78,62 @@ public class Fighter {
             }
         }
 
-        if (attackTimer > 0) attackTimer--;
+        // Timer management
+        if (attackTimer > 0) {
+            attackTimer--;
+            // NEW: Reset attack type when the animation finishes
+            if (attackTimer == 0) {
+                currentAttack = AttackType.NONE;
+            }
+        }
     }
 
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
     public Rectangle getHitbox() {
-        if (attackTimer < 5 || attackTimer > 15) return null; // Active frames
-        int hx = (facingDir == 1) ? (int)x + width : (int)x - 60;
-        return new Rectangle(hx, (int)y + 20, 60, 40);
+        // Active frames check
+        if (attackTimer < 5 || attackTimer > 15 || currentAttack == AttackType.NONE) return null; 
+
+        int hx, hy, hw, hh;
+
+        // NEW: Generate a different hitbox based on the current attack
+        switch (currentAttack) {
+            case UP:
+                hx = (int)x - 10;
+                hy = (int)y - 40; // Placed above the player's head
+                hw = width + 20;  // Slightly wider than the player
+                hh = 50;
+                break;
+            case DOWN:
+                hx = (int)x - 20;
+                hy = (int)y + height - 20; // Placed at the player's feet
+                hw = width + 40; // Hits on both sides
+                hh = 30;
+                break;
+            case SIDE:
+                hx = (facingDir == 1) ? (int)x + width : (int)x - 80;
+                hy = (int)y + 20;
+                hw = 80; // Long forward reach
+                hh = 40;
+                break;
+            case NEUTRAL:
+            default:
+                hx = (facingDir == 1) ? (int)x + width : (int)x - 50;
+                hy = (int)y + 20;
+                hw = 50; // Shorter forward reach
+                hh = 40;
+                break;
+        }
+        
+        return new Rectangle(hx, hy, hw, hh);
     }
 
     public void draw(Graphics2D g) {
         g.setColor(color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
         if (getHitbox() != null) {
-            g.setColor(new Color(255, 255, 0, 150));
+            // Drawing the hitbox in translucent yellow so you can debug it
+            g.setColor(new Color(255, 255, 0, 150)); 
             g.fill(getHitbox());
         }
     }
