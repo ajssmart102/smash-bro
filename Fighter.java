@@ -32,6 +32,17 @@ public class Fighter {
     public Fighter(float x, float y, String name, Color color, int[] keys) {
         this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
     }
+    
+    public void respawn(float startX, float startY) {
+    this.x = startX;
+    this.y = startY;
+    this.velX = 0;
+    this.velY = 0;
+    this.stocks--; // Subtract a life
+    this.jumpsLeft = maxJumps; // Reset jumps
+    this.currentAttack = AttackType.NONE; 
+    this.attackTimer = 0;
+    }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
         // Movement
