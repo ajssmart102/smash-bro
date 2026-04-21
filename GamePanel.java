@@ -21,6 +21,24 @@ public class GamePanel extends JPanel {
         // Focusable allows the panel to be the target of keyboard inputs
         setFocusable(true);
     }
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
+    if (state.fighters == null) return;
+
+    for (Fighter f : state.fighters) {
+        // 1. Move the fighter
+        f.update(keyMap, platforms);
+
+        // 2. CHECK FOR DEATH (The "Blast Zone")
+        // If they fall below the screen (800) or go off-screen
+        if (f.y > 800 || f.y < -500 || f.x < -100 || f.x > getWidth() + 100) {
+            if (f.stocks > 0) {
+                f.respawn(640, 100); // 640/100 is your start position
+            } else {
+                // Handle "Game Over" for this player here
+                }
+            }
+        }
+    }
 
     @Override
     protected void paintComponent(Graphics g0) {
