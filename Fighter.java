@@ -15,6 +15,10 @@ public class Fighter {
     protected int maxJumps = 2;
     protected int jumpsLeft = 2;
 
+    public boolean isCrouching = false;
+    protected int normalHeight = 80;
+    protected int crouchHeight = 40;
+
     // Combat
     public float damage = 0;
     public int stocks = 3;
@@ -32,12 +36,29 @@ public class Fighter {
     public Fighter(float x, float y, String name, Color color, int[] keys) {
         this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
     }
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms) 
+    {
+        // --- CROUCH LOGIC ---
+        // Only allow crouching if grounded (jumpsLeft == maxJumps) and not currently attacking
+        if (keyMap[keys[3]] && jumpsLeft == maxJumps && attackTimer <= 0) {
+            if (!isCrouching) {
+                isCrouching = true;
+                y += (normalHeight - crouchHeight); // Shift Y down to keep feet on floor
+                height = crouchHeight;
+            }
+        } else {
+            if (isCrouching) {
+                isCrouching = false;
+                y -= (normalHeight - crouchHeight); // Shift Y up to stand back up
+                height = normalHeight;
+            }
+        }
 
-    public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
-        // Movement
-        if (keyMap[keys[0]]) { velX = -walkSpeed; facingDir = -1; }
-        else if (keyMap[keys[1]]) { velX = walkSpeed; facingDir = 1; }
-        else { velX *= 0.8f; } // Friction
+        // --- MOVEMENT (Modified for Crouch Speed) ---
+        float currentSpeed = isCrouching ? walkSpeed * 0.3f : walkSpeed;
+        if (keyMap[keys[0]]) { velX = -currentSpeed; facingDir = -1; }
+        else if (keyMap[keys[1]]) { velX = currentSpeed; facingDir = 1; }
+        else { velX *= 0.8f; }
 
         // Jump
         if (keyMap[keys[2]] && jumpsLeft > 0) {
@@ -70,11 +91,16 @@ public class Fighter {
 
         // Platform Collision
         for (Platform p : platforms) {
+            // We check velY > 0 so collision only happens when falling/landing
             if (velY > 0 && x + width > p.x && x < p.x + p.width &&
                 y + height >= p.y && y + height <= p.y + p.height + velY) {
-                y = p.y - height;
+                
+                // This is the critical part: 
+                // 'height' will be 40 if isCrouching is true, or 80 if false.
+                y = p.y - height; 
+                
                 velY = 0;
-                jumpsLeft = maxJumps;
+                jumpsLeft = maxJumps; // Resetting jumps allows the player to crouch again
             }
         }
 
