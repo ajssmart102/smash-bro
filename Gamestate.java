@@ -39,11 +39,20 @@ public class Gamestate {
         fighters.add(new Fighter(800, 300, "P2", Color.RED, p2Bindings));
     }
 
-    public void update() {
+public void update() {
+        // 1. Update movement and check for "Blast Zone" death
         for (Fighter f : fighters) {
             f.update(keys, platforms);
+
+            // Blast Zone Logic (If off screen)
+            if (f.y > 800 || f.y < -500 || f.x < -100 || f.x > 1380) {
+                if (f.stocks > 0) {
+                    f.respawn(400, 300);
+                }
+            }
         }
 
+        // 2. Combat Logic
         for (Fighter attacker : fighters) {
             Rectangle hb = attacker.getHitbox();
             
@@ -53,10 +62,12 @@ public class Gamestate {
 
                     if (victim.getBounds() != null && hb.intersects(victim.getBounds())) {
                         if (!attacker.hitTargets.contains(victim)) {
-                            victim.damage += 10;
                             
-                            // FIX: Cast the double result to a float for velX/velY
-                            victim.velX = (float) (attacker.facingDir * (5 + (double)victim.damage / 10));
+                            // NEW: Apply the attacker's charge multiplier to the damage
+                            victim.damage += (10 * attacker.chargeMultiplier);
+                            
+                            // NEW: Apply the attacker's charge multiplier to the knockback
+                            victim.velX = (float) (attacker.facingDir * (5 + (double)victim.damage / 10) * attacker.chargeMultiplier);
                             victim.velY = -8.0f; // Use 'f' suffix for literal floats
                             
                             attacker.hitTargets.add(victim);
@@ -67,10 +78,10 @@ public class Gamestate {
             }
         }
         
-        // Safely update and remove expired effects
+        // 3. Effects Management
         for (HitEffect e : effects) {
             e.life--; 
         }
         effects.removeIf(e -> e.life <= 0);
-    }
-}
+    } // End of update()
+} // End of Class
