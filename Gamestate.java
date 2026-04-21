@@ -53,10 +53,12 @@ public class Gamestate {
 
                     if (victim.getBounds() != null && hb.intersects(victim.getBounds())) {
                         if (!attacker.hitTargets.contains(victim)) {
-                            victim.damage += 10;
                             
-                            // FIX: Cast the double result to a float for velX/velY
-                            victim.velX = (float) (attacker.facingDir * (5 + (double)victim.damage / 10));
+                            // NEW: Apply the attacker's charge multiplier to the damage
+                            victim.damage += (10 * attacker.chargeMultiplier);
+                            
+                            // NEW: Apply the attacker's charge multiplier to the knockback
+                            victim.velX = (float) (attacker.facingDir * (5 + (double)victim.damage / 10) * attacker.chargeMultiplier);
                             victim.velY = -8.0f; // Use 'f' suffix for literal floats
                             
                             attacker.hitTargets.add(victim);
