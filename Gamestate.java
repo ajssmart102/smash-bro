@@ -16,7 +16,7 @@ public class Gamestate {
         platforms.clear();
         effects.clear();
 
-        platforms.add(new Platform(200, 500, 880, 30)); 
+        platforms.add(new Platform(200, 500, 880, 30));
         
         // Add the 5th key (Crouch) to the end of the arrays
         int[] p1Bindings = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_F, KeyEvent.VK_S};
