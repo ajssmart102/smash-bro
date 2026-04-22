@@ -46,6 +46,8 @@ public class Fighter {
     this.jumpsLeft = maxJumps; // Reset jumps
     this.currentAttack = AttackType.NONE; 
     this.attackTimer = 0;
+    // ADD THIS LINE:
+    this.damage = 0;
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
