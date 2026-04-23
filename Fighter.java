@@ -14,6 +14,8 @@ public class Fighter {
     protected float gravity = 0.5f;
     protected int maxJumps = 2;
     protected int jumpsLeft = 2;
+    protected float baseKnockback = 5.0f;    // The "nudge" at 0% damage
+    protected float knockbackScaling = 0.15f; // How much damage increases the push
 
     // Combat
     public float damage = 0;
@@ -130,21 +132,55 @@ public class Fighter {
         }
     }
 
-    private void handleThrows(boolean[] keyMap) {
+    private void handleThrows(boolean[] keyMap) 
+    {
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
 
-        if (keyMap[keys[0]] || keyMap[keys[1]]) { tx = facingDir * 14; ty = -4; throwTriggered = true; }
-        else if (keyMap[keys[2]]) { tx = 0; ty = -16; throwTriggered = true; }
-        else if (keyMap[keys[3]]) { tx = 0; ty = 12; throwTriggered = true; }
+        // STEP 1 APPLIED: Calculate power based on victim's damage
+        float knockbackMult = baseKnockback + (grabbedEnemy.damage * knockbackScaling);
+
+        if (keyMap[keys[0]] || keyMap[keys[1]]) { 
+            tx = facingDir * (knockbackMult + 5); // Side throws usually need extra oomph
+            ty = -2; 
+            throwTriggered = true; 
+        }
+        else if (keyMap[keys[2]]) { 
+            tx = 0; 
+            ty = -knockbackMult * 1.5f; // Upward throw scales heavily
+            throwTriggered = true; 
+        }
+        else if (keyMap[keys[3]]) { 
+            tx = 0; 
+            ty = knockbackMult; 
+            throwTriggered = true; 
+        }
 
         if (throwTriggered) {
-            grabbedEnemy.velX = tx; grabbedEnemy.velY = ty;
+            grabbedEnemy.velX = tx; 
+            grabbedEnemy.velY = ty;
             grabbedEnemy.isBeingHeld = false;
-            grabbedEnemy.damage += 6;
+            grabbedEnemy.damage += 6; 
             grabbedEnemy = null;
             attackTimer = 15;
         }
+    }
+
+    public void takeHit(float attackDamage, int attackerDir, float baseKnockback, float knockbackScaling) {
+        // 1. Add the damage first
+        this.damage += attackDamage;
+
+        // 2. Calculate Knockback: (Base + (CurrentDamage * Scaling))
+        float totalKnockback = baseKnockback + (this.damage * knockbackScaling);
+
+        // 3. Apply to velocities
+        this.velX = attackerDir * totalKnockback;
+        this.velY = -totalKnockback * 0.5f; // Launches them slightly upward
+        
+        // 4. Cancel any attacks they were doing (Hitstun)
+        this.currentAttack = AttackType.NONE;
+        this.attackTimer = 0;
+        this.isCharging = false;
     }
 
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
