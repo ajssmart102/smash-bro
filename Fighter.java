@@ -34,7 +34,7 @@ public class Fighter {
     public final int MAX_CHARGE = 60;
     public float chargeMultiplier = 1.0f;
 
-    protected int[] keys; // Index 0:L, 1:R, 2:Up, 3:Down, 4:Attack, 5:Grab
+    protected int[] keys; 
 
     public Fighter(float x, float y, String name, Color color, int[] keys) {
         this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
@@ -62,8 +62,12 @@ public class Fighter {
             grabbedEnemy.x = this.x + (this.facingDir * 40);
             grabbedEnemy.y = this.y;
             handleThrows(keyMap);
-            return; // Lock movement while holding someone
+            return; 
         }
+
+        // 1. INPUT PRIORITY CHECK
+        // We check if the player is pressing Attack + Up BEFORE handling Jump.
+        boolean isTryingToUpAttack = keyMap[keys[4]] && keyMap[keys[2]];
 
         // Movement Logic
         if (attackTimer <= 0) {
@@ -71,33 +75,38 @@ public class Fighter {
             else if (keyMap[keys[1]]) { velX = walkSpeed; facingDir = 1; }
             else { velX *= 0.8f; }
         } else {
-            velX *= 0.85f; // Smooth slide
+            velX *= 0.85f;
         }
 
-        // Jumping
-        if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5) {
+        // 2. JUMP LOGIC (Modified)
+        // Only jump if we AREN'T trying to do an Up-Attack right now.
+        if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5 && !isTryingToUpAttack) {
             velY = jumpForce;
             jumpsLeft--;
-            keyMap[keys[2]] = false; 
+            keyMap[keys[2]] = false; // Consume jump input
             attackTimer = 0;
             currentAttack = AttackType.NONE;
         }
 
-        // --- NEW SEPARATED INPUT LOGIC ---
-
-        // 1. GRAB BUTTON (Index 5)
+        // 3. GRAB BUTTON
         if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging) {
             currentAttack = AttackType.GRAB;
-            attackTimer = 18; // Slightly longer commitment for missed grabs
+            attackTimer = 18;
             hitTargets.clear();
         }
 
-        // 2. ATTACK BUTTON (Index 4)
+        // 4. ATTACK BUTTON (Easier Up-Attack detection)
         if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging) {
             isCharging = true;
             chargeFrames = 0;
-            if (keyMap[keys[3]]) currentAttack = AttackType.DOWN;
-            else if (keyMap[keys[2]]) currentAttack = AttackType.UP;
+            
+            // Priority: Up/Down check first
+            if (keyMap[keys[2]]) {
+                currentAttack = AttackType.UP;
+                // We consume the 'Up' key so it doesn't trigger a jump on the next frame
+                keyMap[keys[2]] = false; 
+            }
+            else if (keyMap[keys[3]]) currentAttack = AttackType.DOWN;
             else if (keyMap[keys[0]] || keyMap[keys[1]]) currentAttack = AttackType.SIDE;
             else currentAttack = AttackType.NEUTRAL;
         }
@@ -106,6 +115,9 @@ public class Fighter {
         if (isCharging) {
             if (keyMap[keys[4]] && chargeFrames < MAX_CHARGE) {
                 chargeFrames++;
+                // Allow mid-air drift while charging
+                if (keyMap[keys[0]]) velX = -walkSpeed * 0.5f;
+                if (keyMap[keys[1]]) velX = walkSpeed * 0.5f;
             } else {
                 isCharging = false;
                 attackTimer = 22;
@@ -114,9 +126,10 @@ public class Fighter {
             }
         }
 
-        // Physics & Platforms
+        // Physics
         velY += gravity;
         x += velX; y += velY;
+
         for (Platform p : platforms) {
             if (velY > 0 && x + width > p.x && x < p.x + p.width &&
                 y + height >= p.y && y + height <= p.y + p.height + velY) {
@@ -157,7 +170,10 @@ public class Fighter {
                 hx = (facingDir == 1) ? (int)x + width : (int)x - 35;
                 hy = (int)y + 20; hw = 35; hh = 40;
                 break;
-            case UP: hx = (int)x - 10; hy = (int)y - 40; hw = width + 20; hh = 50; break;
+            case UP: 
+                // Increased the "Up" hitbox slightly so it's easier to land aerials
+                hx = (int)x - 15; hy = (int)y - 50; hw = width + 30; hh = 60; 
+                break;
             case DOWN: hx = (int)x - 20; hy = (int)y + height - 20; hw = width + 40; hh = 30; break;
             case SIDE: hx = (facingDir == 1) ? (int)x + width : (int)x - 80; hy = (int)y + 20; hw = 80; hh = 40; break;
             default: hx = (facingDir == 1) ? (int)x + width : (int)x - 50; hy = (int)y + 20; hw = 50; hh = 40; break;
