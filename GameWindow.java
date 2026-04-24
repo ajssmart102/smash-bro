@@ -1,13 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener; // Import the listener interface
+import java.awt.event.KeyListener;
 
-// We add "implements KeyListener" to the class itself
 public class GameWindow extends JFrame implements KeyListener {
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
+    private MapSelectPanel mapPanel; // NEW
     private Timer gameLoop;
 
     public GameWindow() {
@@ -17,13 +17,14 @@ public class GameWindow extends JFrame implements KeyListener {
         setLocationRelativeTo(null);
         setResizable(false);
 
-        showMenu(); 
+        showCharacterMenu(); 
         setVisible(true);
     }
 
-    private void showMenu() {
-        menuPanel = new CharacterSelectPanel(choice -> {
-            startGame(choice);
+    // Step 1: Pick Character
+    private void showCharacterMenu() {
+        menuPanel = new CharacterSelectPanel(characterChoice -> {
+            showMapMenu(characterChoice); // Move to Map Select next
         });
         
         getContentPane().removeAll();
@@ -32,18 +33,29 @@ public class GameWindow extends JFrame implements KeyListener {
         repaint();
     }
 
-    private void startGame(String characterChoice) {
+    // Step 2: Pick Map (NEW)
+    private void showMapMenu(String characterChoice) {
+        mapPanel = new MapSelectPanel(chosenMap -> {
+            startGame(characterChoice, chosenMap); // Finally start the game
+        });
+
+        getContentPane().removeAll();
+        add(mapPanel);
+        revalidate();
+        repaint();
+    }
+
+    // Step 3: Start the Session
+    private void startGame(String characterChoice, MapData chosenMap) {
         state = new Gamestate();
-        state.setupSession(characterChoice); 
+        // Updated setupSession to take the MapData object
+        state.setupSession(characterChoice, "P2_Placeholder", chosenMap); 
 
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 
 
         getContentPane().removeAll();
         add(gamePanel);
-
-        // Instead of a new class, we tell the panel that THIS window
-        // will handle the key presses.
         gamePanel.addKeyListener(this);
 
         revalidate();
@@ -61,12 +73,9 @@ public class GameWindow extends JFrame implements KeyListener {
         gameLoop.start();
     }
 
-    // --- KEY LISTENER METHODS (Built directly into GameWindow) ---
-
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
-        // Directly update the state's keys array
         if (state != null && code >= 0 && code < state.keys.length) {
             state.keys[code] = true;
         }
@@ -81,9 +90,7 @@ public class GameWindow extends JFrame implements KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-        // Not used for games, but required to be here
-    }
+    public void keyTyped(KeyEvent e) {}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new GameWindow());
