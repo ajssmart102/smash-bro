@@ -20,8 +20,11 @@ public class Fighter {
     public int stocks = 3;
     protected int attackTimer = 0;
     protected Set<Fighter> hitTargets = new HashSet<>();
+
+    // FIX: Added the field declaration here
+    public boolean hasFinalSmash = false;
     
-    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB }
+    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, FINAL_SMASH }
     protected AttackType currentAttack = AttackType.NONE;
 
     // Grab Mechanics
@@ -50,6 +53,7 @@ public class Fighter {
         this.damage = 0;
         this.grabbedEnemy = null;
         this.isBeingHeld = false;
+        this.hasFinalSmash = false;
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
@@ -95,8 +99,16 @@ public class Fighter {
             hitTargets.clear();
         }
 
+        // 4. FINAL SMASH & ATTACK BUTTONS
+        if (hasFinalSmash && keyMap[keys[4]] && attackTimer <= 0) {
+        // Trigger Final Smash
+        currentAttack = AttackType.FINAL_SMASH;
+        attackTimer = 60;
+        hasFinalSmash = false; // Consume power-up
+        hitTargets.clear();
+        }
         // 4. ATTACK BUTTON (Easier Up-Attack detection)
-        if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging) {
+        else if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging) {
             isCharging = true;
             chargeFrames = 0;
             
@@ -110,6 +122,7 @@ public class Fighter {
             else if (keyMap[keys[0]] || keyMap[keys[1]]) currentAttack = AttackType.SIDE;
             else currentAttack = AttackType.NEUTRAL;
         }
+
 
         // Charging logic
         if (isCharging) {
@@ -166,6 +179,10 @@ public class Fighter {
         if (attackTimer <= 0 || currentAttack == AttackType.NONE) return null; 
         int hx, hy, hw, hh;
         switch (currentAttack) {
+            case FINAL_SMASH: 
+                // Large hitbox for the special move
+                hx = (int)x - 100; hy = (int)y - 100; hw = 250; hh = 250;
+                break;
             case GRAB:
                 hx = (facingDir == 1) ? (int)x + width : (int)x - 35;
                 hy = (int)y + 20; hw = 35; hh = 40;
@@ -182,6 +199,11 @@ public class Fighter {
     }
 
     public void draw(Graphics2D g) {
+        // 1. Draw the "Final Smash" Glow/Aura if active
+        if (hasFinalSmash) {
+            g.setColor(new Color(255, 255, 0, 100)); // Semi-transparent yellow
+            g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
+        }
         g.setColor(color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
         if (isCharging) {
@@ -193,7 +215,14 @@ public class Fighter {
             g.drawRect((int)x - 5, (int)y - 5, width + 10, height + 10);
         }
         if (getHitbox() != null) {
-            g.setColor(currentAttack == AttackType.GRAB ? new Color(0, 255, 255, 150) : new Color(255, 255, 0, 150)); 
+            // Pick color based on attack type
+            if (currentAttack == AttackType.FINAL_SMASH) {
+                g.setColor(new Color(255, 255, 0, 200)); // Bright yellow for super
+            } else if (currentAttack == AttackType.GRAB) {
+                g.setColor(new Color(0, 255, 255, 150)); // Cyan for grab
+            } else {
+                g.setColor(new Color(255, 255, 0, 150)); // Standard yellow
+            }
             g.fill(getHitbox());
         }
     }
