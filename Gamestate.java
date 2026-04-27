@@ -55,6 +55,7 @@ public class Gamestate {
         for (HitEffect e : effects) e.life--; 
         effects.removeIf(e -> e.life <= 0);
     }
+}
 
     private void handleHit(Fighter attacker, Fighter victim) {
         if (attacker.currentAttack == Fighter.AttackType.GRAB) {
