@@ -15,8 +15,6 @@ public class Gamestate {
     private int respawnTimer = 0;
     private final int RESPAWN_DELAY = 600; // 600 frames = 10 seconds at 60fps
 
-    public void setupSession(String p1Char) {
-    // UPDATED: Now takes a MapData object
     public void setupSession(String p1Char, String p2Char, MapData chosenMap) {
         fighters.clear();
         platforms.clear();
@@ -83,45 +81,26 @@ public class Gamestate {
     }
 
     private void processCombat() {
-        for (Fighter attacker : fighters) {
-            if (attacker.isBeingHeld) continue;
-            Rectangle hb = attacker.getHitbox();
-            if (hb == null) continue;
+    for (Fighter attacker : fighters) {
+        // 1. Skip if attacker is busy or has no valid hitbox
+        if (attacker.isBeingHeld || attacker.currentAttack == Fighter.AttackType.NONE) continue;
+        
+        Rectangle hb = attacker.getHitbox();
+        if (hb == null) continue;
 
-                    if (victim.getBounds() != null && hb.intersects(victim.getBounds())) {
-                        if (!attacker.hitTargets.contains(victim)) {
-                            
-                            if (attacker.currentAttack == Fighter.AttackType.GRAB) {
-                                attacker.grabbedEnemy = victim;
-                                victim.isBeingHeld = true;
-                                attacker.attackTimer = 0;
-                                attacker.hitTargets.add(victim); 
-                            }
-                                else if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) {
-                                victim.damage += 50; // High base damage
-                                victim.velX = attacker.facingDir * 25; // High horizontal knockback
-                                victim.velY = -15.0f; // High vertical launch
-                            }
-                             else {
-                                victim.damage += (10 * attacker.chargeMultiplier);
-                                victim.velX = (float) (attacker.facingDir * (5 + (double)victim.damage / 10) * attacker.chargeMultiplier);
-                                victim.velY = -8.0f;
-                                attacker.hitTargets.add(victim);
-                                effects.add(new HitEffect((int)victim.x, (int)victim.y));
-                            }
-                            // Shared cleanup for successful hits
-                            attacker.hitTargets.add(victim);
-                            effects.add(new HitEffect((int)victim.x, (int)victim.y));
-                        }
-                    }
-            for (Fighter victim : fighters) {
-                if (attacker == victim) continue;
-                if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) {
-                    handleHit(attacker, victim);
-                }
+        // 2. Iterate through all potential victims
+        for (Fighter victim : fighters) {
+            // Skip self and already hit targets
+            if (attacker == victim) continue;
+            if (attacker.hitTargets.contains(victim)) continue; 
+
+            // 3. Check for collision
+            if (victim.getBounds() != null && hb.intersects(victim.getBounds())) {
+                handleHit(attacker, victim);
             }
         }
     }
+}
 
     private void handleHit(Fighter attacker, Fighter victim) {
         if (attacker.currentAttack == Fighter.AttackType.GRAB) {
