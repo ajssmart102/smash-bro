@@ -7,7 +7,7 @@ public class GameWindow extends JFrame implements KeyListener {
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
-    private MapSelectPanel mapPanel; // NEW
+    private MapSelectPanel mapPanel;
     private Timer gameLoop;
 
     public GameWindow() {
@@ -21,10 +21,9 @@ public class GameWindow extends JFrame implements KeyListener {
         setVisible(true);
     }
 
-    // Step 1: Pick Character
     private void showCharacterMenu() {
         menuPanel = new CharacterSelectPanel(characterChoice -> {
-            showMapMenu(characterChoice); // Move to Map Select next
+            showMapMenu(characterChoice); 
         });
         
         getContentPane().removeAll();
@@ -33,10 +32,9 @@ public class GameWindow extends JFrame implements KeyListener {
         repaint();
     }
 
-    // Step 2: Pick Map (NEW)
     private void showMapMenu(String characterChoice) {
         mapPanel = new MapSelectPanel(chosenMap -> {
-            startGame(characterChoice, chosenMap); // Finally start the game
+            startGame(characterChoice, chosenMap); 
         });
 
         getContentPane().removeAll();
@@ -45,30 +43,30 @@ public class GameWindow extends JFrame implements KeyListener {
         repaint();
     }
 
-    // Step 3: Start the Session
     private void startGame(String characterChoice, MapData chosenMap) {
         state = new Gamestate();
-        // Updated setupSession to take the MapData object
-        state.setupSession(characterChoice, "P2_Placeholder", chosenMap); 
+        
+        // Match the 2-parameter signature in Gamestate
+        state.setupSession(characterChoice, chosenMap); 
 
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 
+        gamePanel.addKeyListener(this);
 
         getContentPane().removeAll();
         add(gamePanel);
-        gamePanel.addKeyListener(this);
 
         revalidate();
         repaint();
 
-        SwingUtilities.invokeLater(() -> {
-            gamePanel.requestFocusInWindow();
-        });
+        gamePanel.requestFocusInWindow();
 
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
-            state.update();
-            gamePanel.repaint();
+            if (state != null) {
+                state.update();
+                gamePanel.repaint();
+            }
         });
         gameLoop.start();
     }

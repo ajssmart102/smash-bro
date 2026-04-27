@@ -24,7 +24,11 @@ public class Fighter {
     // FIX: Added the field declaration here
     public boolean hasFinalSmash = false;
     
-    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, FINAL_SMASH }
+    // --- NEW STATES ---
+    public boolean isHelpless = false;    
+    public boolean ledgeGrabbed = false; 
+
+    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, UP_SPECIAL }
     protected AttackType currentAttack = AttackType.NONE;
 
     // Grab Mechanics
@@ -54,38 +58,57 @@ public class Fighter {
         this.damage = 0;
         this.grabbedEnemy = null;
         this.isBeingHeld = false;
-        this.hasFinalSmash = false;
+        this.isShielding = false;
+        this.isHelpless = false;
+        this.ledgeGrabbed = false;
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
-        if (isBeingHeld) {
+        if (isBeingHeld) { velX = 0; velY = 0; return; }
+
+        // --- NEW: LEDGE LOGIC ---
+        if (ledgeGrabbed) {
             velX = 0; velY = 0;
-            return; 
+            if (keyMap[keys[2]]) { // Press Up to jump off ledge
+                velY = jumpForce;
+                ledgeGrabbed = false;
+                isHelpless = false;
+            }
+            return;
         }
 
-        if (grabbedEnemy != null) {
-            grabbedEnemy.x = this.x + (this.facingDir * 40);
-            grabbedEnemy.y = this.y;
-            handleThrows(keyMap);
-            return; 
+        // --- EXISTING SHIELD LOGIC ---
+        if (keyMap[keys[3]] && attackTimer <= 0 && !isCharging && Math.abs(velY) < 1.0f) {
+            isShielding = true;
+            velX = 0;
+        } else {
+            isShielding = false;
         }
 
-        // 1. INPUT PRIORITY CHECK
-        // We check if the player is pressing Attack + Up BEFORE handling Jump.
+        // --- NEW: UP RECOVERY (SPECIAL + UP) ---
+        if (keyMap[keys[6]] && keyMap[keys[2]] && !isHelpless && !isShielding) {
+            currentAttack = AttackType.UP_SPECIAL;
+            velY = -18f; 
+            attackTimer = 25;
+            isHelpless = true;
+            keyMap[keys[2]] = false; 
+        }
+
+        boolean isDownPressed = (name.equals("P1")) ? keyMap[java.awt.event.KeyEvent.VK_S] : keyMap[java.awt.event.KeyEvent.VK_DOWN];
         boolean isTryingToUpAttack = keyMap[keys[4]] && keyMap[keys[2]];
 
-        // Movement Logic
-        if (attackTimer <= 0) {
-            if (keyMap[keys[0]]) { velX = -walkSpeed; facingDir = -1; }
-            else if (keyMap[keys[1]]) { velX = walkSpeed; facingDir = 1; }
+        // --- UPDATED MOVEMENT (ALLOWS DRIFT IF HELPLESS) ---
+        if (attackTimer <= 0 && !isShielding) {
+            float speed = isHelpless ? walkSpeed * 0.6f : walkSpeed;
+            if (keyMap[keys[0]]) { velX = -speed; facingDir = -1; }
+            else if (keyMap[keys[1]]) { velX = speed; facingDir = 1; }
             else { velX *= 0.8f; }
         } else {
             velX *= 0.85f;
         }
 
-        // 2. JUMP LOGIC (Modified)
-        // Only jump if we AREN'T trying to do an Up-Attack right now.
-        if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5 && !isTryingToUpAttack) {
+        // --- EXISTING JUMP LOGIC (DISABLED IF HELPLESS) ---
+        if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5 && !isTryingToUpAttack && !isShielding && !isHelpless) {
             velY = jumpForce;
             jumpsLeft--;
             keyMap[keys[2]] = false; // Consume jump input
@@ -93,33 +116,18 @@ public class Fighter {
             currentAttack = AttackType.NONE;
         }
 
-        // 3. GRAB BUTTON
-        if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging) {
+        // --- KEEPING EXISTING GRAB & ATTACK LOGIC ---
+        if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging && !isShielding) {
             currentAttack = AttackType.GRAB;
             attackTimer = 18;
             hitTargets.clear();
         }
 
-        // 4. FINAL SMASH & ATTACK BUTTONS
-        if (hasFinalSmash && keyMap[keys[4]] && attackTimer <= 0) {
-        // Trigger Final Smash
-        currentAttack = AttackType.FINAL_SMASH;
-        attackTimer = 60;
-        hasFinalSmash = false; // Consume power-up
-        hitTargets.clear();
-        }
-        // 4. ATTACK BUTTON (Easier Up-Attack detection)
-        else if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging) {
+        if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging && !isShielding) {
             isCharging = true;
             chargeFrames = 0;
-            
-            // Priority: Up/Down check first
-            if (keyMap[keys[2]]) {
-                currentAttack = AttackType.UP;
-                // We consume the 'Up' key so it doesn't trigger a jump on the next frame
-                keyMap[keys[2]] = false; 
-            }
-            else if (keyMap[keys[3]]) currentAttack = AttackType.DOWN;
+            if (keyMap[keys[2]]) { currentAttack = AttackType.UP; keyMap[keys[2]] = false; }
+            else if (isDownPressed) currentAttack = AttackType.DOWN;
             else if (keyMap[keys[0]] || keyMap[keys[1]]) currentAttack = AttackType.SIDE;
             else currentAttack = AttackType.NEUTRAL;
         }
@@ -140,14 +148,25 @@ public class Fighter {
             }
         }
 
-        // Physics
         velY += gravity;
         x += velX; y += velY;
 
+        // --- UPDATED COLLISION (WITH LEDGE DETECTION) ---
         for (Platform p : platforms) {
+            // Ledge Detection
+            if (velY > 0 && !ledgeGrabbed) {
+                if (Math.abs(x + width - p.x) < 15 && Math.abs(y - p.y) < 20) {
+                    ledgeGrabbed = true; x = p.x - width; y = p.y; return;
+                }
+                if (Math.abs(x - (p.x + p.width)) < 15 && Math.abs(y - p.y) < 20) {
+                    ledgeGrabbed = true; x = p.x + p.width; y = p.y; return;
+                }
+            }
+
             if (velY > 0 && x + width > p.x && x < p.x + p.width &&
                 y + height >= p.y && y + height <= p.y + p.height + velY) {
                 y = p.y - height; velY = 0; jumpsLeft = maxJumps;
+                isHelpless = false; // Reset Helpless on ground
             }
         }
 
@@ -160,11 +179,10 @@ public class Fighter {
     private void handleThrows(boolean[] keyMap) {
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
-
+        boolean isDownPressed = (name.equals("P1")) ? keyMap[java.awt.event.KeyEvent.VK_S] : keyMap[java.awt.event.KeyEvent.VK_DOWN];
         if (keyMap[keys[0]] || keyMap[keys[1]]) { tx = facingDir * 14; ty = -4; throwTriggered = true; }
         else if (keyMap[keys[2]]) { tx = 0; ty = -16; throwTriggered = true; }
-        else if (keyMap[keys[3]]) { tx = 0; ty = 12; throwTriggered = true; }
-
+        else if (isDownPressed) { tx = 0; ty = 12; throwTriggered = true; }
         if (throwTriggered) {
             grabbedEnemy.velX = tx; grabbedEnemy.velY = ty;
             grabbedEnemy.isBeingHeld = false;
@@ -180,19 +198,10 @@ public class Fighter {
         if (attackTimer <= 0 || currentAttack == AttackType.NONE) return null; 
         int hx, hy, hw, hh;
         switch (currentAttack) {
-            case FINAL_SMASH: 
-                // Large hitbox for the special move
-                hx = (int)x - 100; hy = (int)y - 100; hw = 250; hh = 250;
-                break;
-            case GRAB:
-                hx = (facingDir == 1) ? (int)x + width : (int)x - 35;
-                hy = (int)y + 20; hw = 35; hh = 40;
-                break;
-            case UP: 
-                // Increased the "Up" hitbox slightly so it's easier to land aerials
-                hx = (int)x - 15; hy = (int)y - 50; hw = width + 30; hh = 60; 
-                break;
-            case DOWN: hx = (int)x - 20; hy = (int)y + height - 20; hw = width + 40; hh = 30; break;
+            case GRAB: hx = (facingDir == 1) ? (int)x + width : (int)x - 35; hy = (int)y + 20; hw = 35; hh = 40; break;
+            case UP: hx = (int)x - 15; hy = (int)y - 50; hw = width + 30; hh = 60; break;
+            case DOWN: hx = (int)x - 10; hy = (int)y + height; hw = width + 20; hh = 40; break;
+            case UP_SPECIAL: hx = (int)x - 5; hy = (int)y - 10; hw = width + 10; hh = height + 10; break;
             case SIDE: hx = (facingDir == 1) ? (int)x + width : (int)x - 80; hy = (int)y + 20; hw = 80; hh = 40; break;
             default: hx = (facingDir == 1) ? (int)x + width : (int)x - 50; hy = (int)y + 20; hw = 50; hh = 40; break;
         }
@@ -200,20 +209,16 @@ public class Fighter {
     }
 
     public void draw(Graphics2D g) {
-        // 1. Draw the "Final Smash" Glow/Aura if active
-        if (hasFinalSmash) {
-            g.setColor(new Color(255, 255, 0, 100)); // Semi-transparent yellow
-            g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
+        if (isShielding) {
+            g.setColor(new Color(100, 200, 255, 120));
+            g.fillOval((int)x - 15, (int)y - 5, width + 30, height + 10);
         }
-        g.setColor(color);
+        // Body color changes if helpless
+        g.setColor(isHelpless ? Color.DARK_GRAY : color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
         if (isCharging) {
             g.setColor(Color.WHITE);
             g.fillRect((int)x, (int)y - 15, (int)((float)width * ((float)chargeFrames / MAX_CHARGE)), 5);
-        }
-        if (grabbedEnemy != null) {
-            g.setColor(Color.CYAN);
-            g.drawRect((int)x - 5, (int)y - 5, width + 10, height + 10);
         }
         if (getHitbox() != null) {
             // Pick color based on attack type
