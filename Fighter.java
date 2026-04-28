@@ -8,17 +8,21 @@ public class Fighter {
     public Color color;
     public int facingDir = 1;
 
+    // Stats
     protected float walkSpeed = 7f;
     protected float jumpForce = -14f;
     protected float gravity = 0.5f;
     protected int maxJumps = 2;
     protected int jumpsLeft = 2;
 
+    // Combat
     public float damage = 0;
     public int stocks = 3;
     protected int attackTimer = 0;
     protected Set<Fighter> hitTargets = new HashSet<>();
-    public boolean isShielding = false; 
+
+    // FIX: Added the field declaration here
+    public boolean hasFinalSmash = false;
     
     // --- NEW STATES ---
     public boolean isHelpless = false;    
@@ -27,9 +31,12 @@ public class Fighter {
     public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, UP_SPECIAL }
     protected AttackType currentAttack = AttackType.NONE;
 
+    // Grab Mechanics
     public Fighter grabbedEnemy = null; 
     public boolean isBeingHeld = false;
+    public boolean isShielding = false;
 
+    // Charging Mechanics
     public boolean isCharging = false;
     public int chargeFrames = 0;
     public final int MAX_CHARGE = 60;
@@ -96,7 +103,7 @@ public class Fighter {
             if (keyMap[keys[0]]) { velX = -speed; facingDir = -1; }
             else if (keyMap[keys[1]]) { velX = speed; facingDir = 1; }
             else { velX *= 0.8f; }
-        } else if (attackTimer > 0) {
+        } else {
             velX *= 0.85f;
         }
 
@@ -104,7 +111,7 @@ public class Fighter {
         if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5 && !isTryingToUpAttack && !isShielding && !isHelpless) {
             velY = jumpForce;
             jumpsLeft--;
-            keyMap[keys[2]] = false; 
+            keyMap[keys[2]] = false; // Consume jump input
             attackTimer = 0;
             currentAttack = AttackType.NONE;
         }
@@ -125,9 +132,12 @@ public class Fighter {
             else currentAttack = AttackType.NEUTRAL;
         }
 
+
+        // Charging logic
         if (isCharging) {
             if (keyMap[keys[4]] && chargeFrames < MAX_CHARGE) {
                 chargeFrames++;
+                // Allow mid-air drift while charging
                 if (keyMap[keys[0]]) velX = -walkSpeed * 0.5f;
                 if (keyMap[keys[1]]) velX = walkSpeed * 0.5f;
             } else {
@@ -211,7 +221,14 @@ public class Fighter {
             g.fillRect((int)x, (int)y - 15, (int)((float)width * ((float)chargeFrames / MAX_CHARGE)), 5);
         }
         if (getHitbox() != null) {
-            g.setColor(currentAttack == AttackType.GRAB ? new Color(0, 255, 255, 100) : new Color(255, 255, 0, 100));
+            // Pick color based on attack type
+            if (currentAttack == AttackType.FINAL_SMASH) {
+                g.setColor(new Color(255, 255, 0, 200)); // Bright yellow for super
+            } else if (currentAttack == AttackType.GRAB) {
+                g.setColor(new Color(0, 255, 255, 150)); // Cyan for grab
+            } else {
+                g.setColor(new Color(255, 255, 0, 150)); // Standard yellow
+            }
             g.fill(getHitbox());
         }
     }
