@@ -28,7 +28,7 @@ public class Fighter {
     public boolean isHelpless = false;    
     public boolean ledgeGrabbed = false; 
 
-    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, UP_SPECIAL }
+    public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, UP_SPECIAL, FINAL_SMASH }
     protected AttackType currentAttack = AttackType.NONE;
 
     // Grab Mechanics
@@ -61,6 +61,7 @@ public class Fighter {
         this.isShielding = false;
         this.isHelpless = false;
         this.ledgeGrabbed = false;
+        this.hasFinalSmash = false; // Reset ability on death
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
@@ -83,6 +84,14 @@ public class Fighter {
             velX = 0;
         } else {
             isShielding = false;
+        }
+        // --- FINAL SMASH TRIGGER ---
+        if (hasFinalSmash && keyMap[keys[6]] && attackTimer <= 0 && !isShielding) {
+            currentAttack = AttackType.FINAL_SMASH;
+            attackTimer = 60; 
+            hasFinalSmash = false; 
+
+            hitTargets.clear();
         }
 
         // --- NEW: UP RECOVERY (SPECIAL + UP) ---
@@ -203,6 +212,7 @@ public class Fighter {
             case DOWN: hx = (int)x - 10; hy = (int)y + height; hw = width + 20; hh = 40; break;
             case UP_SPECIAL: hx = (int)x - 5; hy = (int)y - 10; hw = width + 10; hh = height + 10; break;
             case SIDE: hx = (facingDir == 1) ? (int)x + width : (int)x - 80; hy = (int)y + 20; hw = 80; hh = 40; break;
+            case FINAL_SMASH: hx = (int)x - 150; hy = (int)y - 150; hw = 350; hh = 350; break; // Added Hitbox
             default: hx = (facingDir == 1) ? (int)x + width : (int)x - 50; hy = (int)y + 20; hw = 50; hh = 40; break;
         }
         return new Rectangle(hx, hy, hw, hh);
@@ -212,6 +222,11 @@ public class Fighter {
         if (isShielding) {
             g.setColor(new Color(100, 200, 255, 120));
             g.fillOval((int)x - 15, (int)y - 5, width + 30, height + 10);
+        }
+        // Final Smash Glow
+        if (hasFinalSmash) {
+            g.setColor(new Color(255, 255, 0, 50));
+            g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
         }
         // Body color changes if helpless
         g.setColor(isHelpless ? Color.DARK_GRAY : color);
