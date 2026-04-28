@@ -6,8 +6,6 @@ import java.awt.event.KeyListener;
 public class GameWindow extends JFrame implements KeyListener {
     private Gamestate state;
     private GamePanel gamePanel;
-    private CharacterSelectPanel menuPanel;
-    private MapSelectPanel mapPanel;
     private Timer gameLoop;
 
     public GameWindow() {
@@ -21,61 +19,68 @@ public class GameWindow extends JFrame implements KeyListener {
         setVisible(true);
     }
 
+    // Step 1: Pick your Character
     private void showCharacterMenu() {
-        menuPanel = new CharacterSelectPanel(characterChoice -> {
-            showMapMenu(characterChoice); 
+        CharacterSelectPanel charPanel = new CharacterSelectPanel(characterChoice -> {
+            showMapMenu(characterChoice); // Move to Map Selection next
         });
         
-        getContentPane().removeAll();
-        add(menuPanel);
-        revalidate();
-        repaint();
+        updateView(charPanel);
     }
 
+    // Step 2: Pick your Map
     private void showMapMenu(String characterChoice) {
-        mapPanel = new MapSelectPanel(chosenMap -> {
-            startGame(characterChoice, chosenMap); 
+        MapSelectPanel mapPanel = new MapSelectPanel(chosenMap -> {
+            startGame(characterChoice, chosenMap); // Start the game with both choices
         });
 
-        getContentPane().removeAll();
-        add(mapPanel);
-        revalidate();
-        repaint();
+        updateView(mapPanel);
     }
 
+    // Step 3: Launch the Game
     private void startGame(String characterChoice, MapData chosenMap) {
         state = new Gamestate();
-        
-        // Match the 2-parameter signature in Gamestate
-        state.setupSession(characterChoice, chosenMap); 
+        state.setupSession(characterChoice, chosenMap); // Updated signature
 
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 
-        gamePanel.addKeyListener(this);
+        gamePanel.addKeyListener(this); // Listen for inputs here
 
-        getContentPane().removeAll();
-        add(gamePanel);
+        updateView(gamePanel);
 
-        revalidate();
-        repaint();
+        // Ensure the game panel grabs focus for key inputs
+        SwingUtilities.invokeLater(() -> gamePanel.requestFocusInWindow());
 
-        gamePanel.requestFocusInWindow();
-
+        // Game Loop (60 FPS approx)
         if (gameLoop != null) gameLoop.stop();
         gameLoop = new Timer(16, e -> {
-            if (state != null) {
-                state.update();
-                gamePanel.repaint();
-            }
+            state.update();
+            gamePanel.repaint();
         });
         gameLoop.start();
     }
+
+    // Helper to swap panels easily
+    private void updateView(JPanel panel) {
+        getContentPane().removeAll();
+        add(panel);
+        revalidate();
+        repaint();
+    }
+
+    // --- KEY LISTENER METHODS ---
 
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
         if (state != null && code >= 0 && code < state.keys.length) {
             state.keys[code] = true;
+        }
+        
+        // Quick Reset shortcut (Optional: Press ESC to go back to menu)
+        if (code == KeyEvent.VK_ESCAPE) {
+            if (gameLoop != null) gameLoop.stop();
+            showCharacterMenu();
         }
     }
 

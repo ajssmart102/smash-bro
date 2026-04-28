@@ -65,10 +65,6 @@ public class GamePanel extends JPanel {
             }
         }
 
-        if (state.smashBall != null && !state.smashBall.isBroken) {
-            state.smashBall.draw(g);
-        }
-
         // 4. DRAW EFFECTS (Hit sparks, etc.)
         if (state.effects != null) {
             // Use a standard for-loop to avoid ConcurrentModificationException 
