@@ -6,51 +6,65 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class MapSelectPanel extends JPanel {
-    private MapData previewMap = null; // The map currently being hovered over
+    private MapData previewMap = null; 
 
     public MapSelectPanel(Consumer<MapData> onMapSelected) {
         setLayout(new BorderLayout());
-        setBackground(new Color(20, 20, 20));
+        setBackground(Color.BLACK); 
 
+        // --- TITLE ---
         JLabel title = new JLabel("SELECT MAP", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 40));
+        title.setFont(new Font("Arial", Font.BOLD, 48));
         title.setForeground(Color.WHITE);
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        add(title, BorderLayout.NORTH);
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
-        
+        // --- BUTTON ROW (Short and Horizontal) ---
         List<MapData> maps = MapData.getAllMaps();
+        // 1 row, columns match map count, 5px gap between boxes
+        JPanel buttonRow = new JPanel(new GridLayout(1, maps.size(), 5, 0));
+        buttonRow.setOpaque(false);
 
         for (MapData map : maps) {
             JButton btn = new JButton(map.name);
-            btn.setPreferredSize(new Dimension(200, 100));
-            btn.setFont(new Font("Arial", Font.BOLD, 20));
+            btn.setFont(new Font("Arial", Font.BOLD, 18));
             btn.setFocusPainted(false);
             
-            // Action when clicked
-            btn.addActionListener(e -> onMapSelected.accept(map));
-
-            // NEW: Preview logic on hover
+            // Light blue-white styling
+            btn.setBackground(new Color(225, 240, 255));
+            btn.setForeground(new Color(30, 30, 50));
+            btn.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+            
             btn.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     previewMap = map;
-                    repaint(); // Tells the panel to draw the preview
+                    btn.setBackground(Color.WHITE); 
+                    repaint(); 
                 }
-
                 @Override
                 public void mouseExited(MouseEvent e) {
                     previewMap = null;
-                    repaint(); // Clears the preview
+                    btn.setBackground(new Color(225, 240, 255));
+                    repaint(); 
                 }
             });
 
-            buttonPanel.add(btn);
+            btn.addActionListener(e -> onMapSelected.accept(map));
+            buttonRow.add(btn);
         }
 
-        add(buttonPanel, BorderLayout.CENTER);
+        // --- THE FIX: TOP CONTAINER ---
+        // This panel holds the title and the buttons at the top of the screen
+        JPanel topContainer = new JPanel(new BorderLayout());
+        topContainer.setOpaque(false);
+        topContainer.add(title, BorderLayout.NORTH);
+        
+        // Give the button row a specific height (e.g., 100 pixels)
+        buttonRow.setPreferredSize(new Dimension(0, 100)); 
+        topContainer.add(buttonRow, BorderLayout.CENTER);
+
+        // Add the topContainer to the NORTH so it doesn't stretch vertically
+        add(topContainer, BorderLayout.NORTH);
     }
 
     @Override
@@ -58,28 +72,21 @@ public class MapSelectPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // If a map is being hovered, draw its layout in the background
+        // The area below the buttons is now empty for the map preview
         if (previewMap != null) {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            // Draw a subtle "ghost" background for the stage area
-            g2.setColor(new Color(255, 255, 255, 10)); // Very faint white
-            g2.fillRect(100, 100, getWidth() - 200, getHeight() - 200);
-
-            // Draw the platforms of the hovered map
+            // Draw platforms in their actual locations in the big empty space
             for (Platform p : previewMap.platforms) {
-                // We draw them slightly transparent so the buttons stay visible
                 g2.setColor(new Color(100, 100, 255, 150)); 
-                g2.fill(new Rectangle((int)p.x, (int)p.y, (int)p.width, (int)p.height));
+                g2.fillRect((int)p.x, (int)p.y, (int)p.width, (int)p.height);
                 
-                // Add a little highlight edge
                 g2.setColor(Color.CYAN);
-                g2.draw(new Rectangle((int)p.x, (int)p.y, (int)p.width, (int)p.height));
+                g2.drawRect((int)p.x, (int)p.y, (int)p.width, (int)p.height);
             }
 
-            // Draw the name of the hovered map in the background
             g2.setFont(new Font("Arial", Font.ITALIC, 60));
-            g2.setColor(new Color(255, 255, 255, 30));
+            g2.setColor(new Color(255, 255, 255, 20));
             g2.drawString(previewMap.name, 50, getHeight() - 50);
         }
     }
