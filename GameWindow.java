@@ -22,8 +22,9 @@ public class GameWindow extends JFrame implements KeyListener {
     }
 
     private void showCharacterMenu() {
-        menuPanel = new CharacterSelectPanel(characterChoice -> {
-            showMapMenu(characterChoice); 
+        // Updated to handle the BiConsumer (p1, p2)
+        menuPanel = new CharacterSelectPanel((p1Choice, p2Choice) -> {
+            showMapMenu(p1Choice, p2Choice); 
         });
         
         getContentPane().removeAll();
@@ -32,9 +33,10 @@ public class GameWindow extends JFrame implements KeyListener {
         repaint();
     }
 
-    private void showMapMenu(String characterChoice) {
+    private void showMapMenu(String p1Choice, String p2Choice) {
+        // Carry both choices into the map selection phase
         mapPanel = new MapSelectPanel(chosenMap -> {
-            startGame(characterChoice, chosenMap); 
+            startGame(p1Choice, p2Choice, chosenMap); 
         });
 
         getContentPane().removeAll();
@@ -43,11 +45,11 @@ public class GameWindow extends JFrame implements KeyListener {
         repaint();
     }
 
-    private void startGame(String characterChoice, MapData chosenMap) {
+    private void startGame(String p1Choice, String p2Choice, MapData chosenMap) {
         state = new Gamestate();
         
-        // Match the 2-parameter signature in Gamestate
-        state.setupSession(characterChoice, chosenMap); 
+        // Ensure your Gamestate.setupSession is updated to handle (String p1, String p2, MapData map)
+        state.setupSession(p1Choice, p2Choice, chosenMap); 
 
         gamePanel = new GamePanel(state);
         gamePanel.setFocusable(true); 

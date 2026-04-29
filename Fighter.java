@@ -8,33 +8,38 @@ public class Fighter {
     public Color color;
     public int facingDir = 1;
 
-    // Stats
-    protected float walkSpeed = 7f;
-    protected float jumpForce = -14f;
-    protected float gravity = 0.5f;
+    // --- CHARACTER STATS (Applied by Gamestate) ---
+    public float walkSpeed = 7f;
+    public float jumpForce = -14f;
+    public float gravity = 0.5f;
+    public float weight = 1.0f; // Multiplier for gravity/launch speed
+    public float attackDamageMultiplier = 1.0f;
+    public float maxHealth = 100f;
+    public float currentHealth = 100f;
+    
     protected int maxJumps = 2;
     protected int jumpsLeft = 2;
 
-    // Combat
-    public float damage = 0;
+    // --- COMBAT ---
+    public float damage = 0; // % Damage (Smash style)
     public int stocks = 3;
     protected int attackTimer = 0;
     protected Set<Fighter> hitTargets = new HashSet<>();
     public boolean hasFinalSmash = false;
     
-    // States
+    // --- STATES ---
     public boolean isHelpless = false;    
     public boolean ledgeGrabbed = false; 
 
     public enum AttackType { NONE, NEUTRAL, SIDE, UP, DOWN, GRAB, UP_SPECIAL, FINAL_SMASH }
     protected AttackType currentAttack = AttackType.NONE;
 
-    // Grab Mechanics
+    // --- GRAB & SHIELD ---
     public Fighter grabbedEnemy = null; 
     public boolean isBeingHeld = false;
     public boolean isShielding = false;
 
-    // Charging Mechanics
+    // --- CHARGING ---
     public boolean isCharging = false;
     public int chargeFrames = 0;
     public final int MAX_CHARGE = 60;
@@ -54,6 +59,7 @@ public class Fighter {
         this.currentAttack = AttackType.NONE; 
         this.attackTimer = 0;
         this.damage = 0;
+        this.currentHealth = maxHealth; // Reset health if using health bar logic
         this.grabbedEnemy = null;
         this.isBeingHeld = false;
         this.isShielding = false;
@@ -63,24 +69,17 @@ public class Fighter {
     }
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
-        // --- GRAB FIX: TETHER THE ENEMY ---
-        if (isBeingHeld) { 
-            velX = 0; velY = 0; 
-            return; 
-        }
+        if (isBeingHeld) { velX = 0; velY = 0; return; }
 
         if (grabbedEnemy != null) {
-            // Force the enemy to stay in front of us
             grabbedEnemy.x = this.x + (this.facingDir * 40);
             grabbedEnemy.y = this.y;
             handleThrows(keyMap);
-            // Optional: allow slow walking while carrying
             if (keyMap[keys[0]]) { x -= 2; facingDir = -1; }
             if (keyMap[keys[1]]) { x += 2; facingDir = 1; }
             return; 
         }
 
-        // --- LEDGE LOGIC ---
         if (ledgeGrabbed) {
             velX = 0; velY = 0;
             if (keyMap[keys[2]]) { 
@@ -91,14 +90,15 @@ public class Fighter {
             return;
         }
 
-        // --- COMBAT STATES ---
-        if (keyMap[keys[3]] && attackTimer <= 0 && !isCharging && Math.abs(velY) < 1.0f) {
+        // Shielding logic
+        if (keyMap[keys[3]] && attackTimer <= 0 && !isCharging && Math.abs(velY) < 1.5f) {
             isShielding = true;
             velX = 0;
         } else {
             isShielding = false;
         }
 
+        // Final Smash activation
         if (hasFinalSmash && keyMap[keys[6]] && attackTimer <= 0 && !isShielding) {
             currentAttack = AttackType.FINAL_SMASH;
             attackTimer = 60; 
@@ -106,6 +106,7 @@ public class Fighter {
             hitTargets.clear();
         }
 
+        // Up Special
         if (keyMap[keys[6]] && keyMap[keys[2]] && !isHelpless && !isShielding) {
             currentAttack = AttackType.UP_SPECIAL;
             velY = -18f; 
@@ -114,10 +115,7 @@ public class Fighter {
             keyMap[keys[2]] = false; 
         }
 
-        // --- MOVEMENT ---
-        boolean isDownPressed = (name.equals("P1")) ? keyMap[java.awt.event.KeyEvent.VK_S] : keyMap[java.awt.event.KeyEvent.VK_DOWN];
-        boolean isTryingToUpAttack = keyMap[keys[4]] && keyMap[keys[2]];
-
+        // Horizontal Movement
         if (attackTimer <= 0 && !isShielding) {
             float speed = isHelpless ? walkSpeed * 0.6f : walkSpeed;
             if (keyMap[keys[0]]) { velX = -speed; facingDir = -1; }
@@ -127,7 +125,8 @@ public class Fighter {
             velX *= 0.85f;
         }
 
-        // JUMP
+        // Jumping
+        boolean isTryingToUpAttack = keyMap[keys[4]] && keyMap[keys[2]];
         if (keyMap[keys[2]] && jumpsLeft > 0 && attackTimer <= 5 && !isTryingToUpAttack && !isShielding && !isHelpless) {
             velY = jumpForce;
             jumpsLeft--;
@@ -136,7 +135,7 @@ public class Fighter {
             currentAttack = AttackType.NONE;
         }
 
-        // ATTACK & GRAB TRIGGER
+        // Attack & Grab Triggers
         if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging && !isShielding) {
             currentAttack = AttackType.GRAB;
             attackTimer = 18;
@@ -146,13 +145,14 @@ public class Fighter {
         if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging && !isShielding) {
             isCharging = true;
             chargeFrames = 0;
+            // Simplified check for direction of attack
+            boolean isDownPressed = (keys[0] == 65) ? keyMap[83] : keyMap[40]; // Quick S/Down check
             if (keyMap[keys[2]]) { currentAttack = AttackType.UP; keyMap[keys[2]] = false; }
             else if (isDownPressed) currentAttack = AttackType.DOWN;
             else if (keyMap[keys[0]] || keyMap[keys[1]]) currentAttack = AttackType.SIDE;
             else currentAttack = AttackType.NEUTRAL;
         }
 
-        // CHARGING
         if (isCharging) {
             if (keyMap[keys[4]] && chargeFrames < MAX_CHARGE) {
                 chargeFrames++;
@@ -164,33 +164,30 @@ public class Fighter {
             }
         }
 
-        // --- PHYSICS & MOVING PLATFORMS FIX ---
-        velY += gravity;
+        // --- PHYSICS (Weighted) ---
+        velY += (gravity * weight); // Weight affects fall speed
         x += velX; 
         y += velY;
 
         for (Platform p : platforms) {
-            // Ledge Detection
+            // Ledge detection
             if (velY > 0 && !ledgeGrabbed) {
-                if (Math.abs(x + width - p.x) < 15 && Math.abs(y - p.y) < 20) {
+                if (Math.abs(x + width - p.x) < 15 && Math.abs(y - p.y) < 25) {
                     ledgeGrabbed = true; x = p.x - width; y = p.y; return;
                 }
-                if (Math.abs(x - (p.x + p.width)) < 15 && Math.abs(y - p.y) < 20) {
+                if (Math.abs(x - (p.x + p.width)) < 15 && Math.abs(y - p.y) < 25) {
                     ledgeGrabbed = true; x = p.x + p.width; y = p.y; return;
                 }
             }
 
-            // Platform Collision & Velocity Transfer
+            // Platform collision
             if (velY >= 0 && x + width > p.x && x < p.x + p.width &&
                 y + height >= p.y && y + height <= p.y + p.height + velY + 2) {
-                
                 y = p.y - height; 
                 velY = 0; 
                 jumpsLeft = maxJumps;
                 isHelpless = false;
-
-                // FIX: Add platform's velocity to player so they stay on it
-                x += p.velX;
+                x += p.velX; // Move with platform
                 y += p.velY; 
             }
         }
@@ -204,8 +201,8 @@ public class Fighter {
     private void handleThrows(boolean[] keyMap) {
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
-        boolean isDownPressed = (name.equals("P1")) ? keyMap[java.awt.event.KeyEvent.VK_S] : keyMap[java.awt.event.KeyEvent.VK_DOWN];
-        
+        boolean isDownPressed = (keys[0] == 65) ? keyMap[83] : keyMap[40];
+
         if (keyMap[keys[0]]) { tx = -14; ty = -4; throwTriggered = true; }
         else if (keyMap[keys[1]]) { tx = 14; ty = -4; throwTriggered = true; }
         else if (keyMap[keys[2]]) { tx = 0; ty = -16; throwTriggered = true; }
@@ -214,7 +211,7 @@ public class Fighter {
         if (throwTriggered && grabbedEnemy != null) {
             grabbedEnemy.velX = tx; grabbedEnemy.velY = ty;
             grabbedEnemy.isBeingHeld = false;
-            grabbedEnemy.damage += 6;
+            grabbedEnemy.damage += (6 * attackDamageMultiplier);
             grabbedEnemy = null;
             attackTimer = 15;
             currentAttack = AttackType.NONE;
@@ -224,7 +221,7 @@ public class Fighter {
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
     public Rectangle getHitbox() {
-        if (attackTimer <= 0 || currentAttack == AttackType.NONE) return null; 
+        if (attackTimer <= 0 || currentAttack == AttackType.NONE || isCharging) return null; 
         int hx, hy, hw, hh;
         switch (currentAttack) {
             case GRAB: hx = (facingDir == 1) ? (int)x + width : (int)x - 35; hy = (int)y + 20; hw = 35; hh = 40; break;
@@ -247,18 +244,21 @@ public class Fighter {
             g.setColor(new Color(255, 255, 0, 50));
             g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
         }
+        
         g.setColor(isHelpless ? Color.DARK_GRAY : color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
         
+        // Show charging bar
         if (isCharging) {
             g.setColor(Color.WHITE);
             g.fillRect((int)x, (int)y - 15, (int)((float)width * ((float)chargeFrames / MAX_CHARGE)), 5);
         }
-        if (getHitbox() != null) {
-            if (currentAttack == AttackType.FINAL_SMASH) g.setColor(new Color(255, 255, 0, 200));
-            else if (currentAttack == AttackType.GRAB) g.setColor(new Color(0, 255, 255, 150));
-            else g.setColor(new Color(255, 255, 0, 150));
-            g.fill(getHitbox());
+
+        // Debug: Draw hitbox
+        Rectangle hb = getHitbox();
+        if (hb != null) {
+            g.setColor(new Color(255, 255, 0, 100));
+            g.fill(hb);
         }
     }
 }
