@@ -33,7 +33,6 @@ public class Gamestate {
         Fighter player1 = new Fighter(300, 300, p1Char, Color.BLUE, p1Keys);
         Fighter player2 = new Fighter(880, 300, p2Char, Color.RED, p2Keys);
         
-        // Apply character-specific stat variations
         applyStats(player1, p1Char);
         applyStats(player2, p2Char);
 
@@ -53,35 +52,25 @@ public class Gamestate {
     }
 
     public void update() {
-        // 1. Update Fighters & Blast Zones
+        // --- 1. Update Platforms (CRITICAL for moving maps) ---
+        for (Platform p : platforms) {
+            p.update();
+        }
+
+        // --- 2. Update Fighters & Blast Zones ---
         for (Fighter f : fighters) {
             f.update(keys, platforms);
-            if (f.y > 900 || f.y < -700 || f.x < -300 || f.x > 1580) {
+            // Blast Zone detection (Respawn)
+            if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) {
                 if (f.stocks > 0) f.respawn(640, 300);
             }
         }
 
-        // 2. SmashBall Logic
+        // --- 3. Items & Combat ---
         updateSmashBall();
+        updateCombat();
 
-        // 3. Combat Logic
-        for (Fighter attacker : fighters) {
-            if (attacker.isBeingHeld || attacker.ledgeGrabbed) continue;
-            Rectangle hb = attacker.getHitbox();
-            
-            if (hb != null) {
-                for (Fighter victim : fighters) {
-                    if (attacker == victim) continue;
-                    
-                    // Check intersection and ensure move only hits once per animation
-                    if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) {
-                        handleHit(attacker, victim);
-                    }
-                }
-            }
-        }
-
-        // 4. Effects Cleanup
+        // --- 4. Effects Cleanup ---
         for (HitEffect e : effects) e.life--; 
         effects.removeIf(e -> e.life <= 0);
     }
@@ -102,14 +91,31 @@ public class Gamestate {
                     if (smashBall.health <= 0) {
                         smashBall.isBroken = true;
                         f.hasFinalSmash = true;
-                        // Explosive release: pushes everyone else away
+                        // Explosion uses the scaling knockback system
                         for (Fighter target : fighters) {
                             if (target != f) {
-                                float dir = (target.x > smashBall.x) ? 15f : -15f;
-                                target.applyKnockback(dir, -10f);
+                                float dir = (target.x > smashBall.x) ? 18f : -18f;
+                                target.applyKnockback(dir, -12f);
                                 effects.add(new HitEffect((int)target.x, (int)target.y));
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    private void updateCombat() {
+        for (Fighter attacker : fighters) {
+            if (attacker.isBeingHeld || attacker.ledgeGrabbed) continue;
+            Rectangle hb = attacker.getHitbox();
+            
+            if (hb != null) {
+                for (Fighter victim : fighters) {
+                    if (attacker == victim) continue;
+                    
+                    if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) {
+                        handleHit(attacker, victim);
                     }
                 }
             }
@@ -122,42 +128,33 @@ public class Gamestate {
             victim.isBeingHeld = true;
             victim.isShielding = false;
         } else if (victim.isShielding && attacker.currentAttack != Fighter.AttackType.FINAL_SMASH) {
-            // Push attacker back on shield hit
             attacker.velX = -attacker.facingDir * 7; 
         } else {
-            // 1. Calculate Damage
+            // Calculate Damage
             float baseDmg = 10f;
             if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) baseDmg = 45f;
             
             victim.damage += (baseDmg * attacker.chargeMultiplier * attacker.attackDamageMultiplier);
 
-            // 2. Determine Launch Direction
+            // Determine Base Launch Angle
             float launchX = 0, launchY = 0;
 
             switch (attacker.currentAttack) {
                 case FINAL_SMASH:
-                    launchX = attacker.facingDir * 22f;
-                    launchY = -18f;
-                    break;
+                    launchX = attacker.facingDir * 22f; launchY = -18f; break;
                 case DOWN:
-                    launchX = attacker.facingDir * 2f;
-                    launchY = 15f; // Spike
-                    break;
+                    launchX = attacker.facingDir * 2f; launchY = 16f; break; // Spike
                 case UP:
-                    launchX = attacker.facingDir * 1f;
-                    launchY = -18f;
-                    break;
+                    launchX = attacker.facingDir * 1f; launchY = -19f; break;
                 case SIDE:
-                    launchX = attacker.facingDir * 14f;
-                    launchY = -6f;
-                    break;
+                    launchX = attacker.facingDir * 15f; launchY = -7f; break;
+                case UP_SPECIAL:
+                    launchX = attacker.facingDir * 4f; launchY = -14f; break;
                 default: // Neutral
-                    launchX = attacker.facingDir * 8f;
-                    launchY = -9f;
-                    break;
+                    launchX = attacker.facingDir * 9f; launchY = -10f; break;
             }
 
-            // 3. Apply the Scaling Knockback via Fighter method
+            // Apply scaling knockback
             victim.applyKnockback(launchX, launchY);
             effects.add(new HitEffect((int)victim.x, (int)victim.y));
         }
