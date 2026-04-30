@@ -6,88 +6,125 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class MapSelectPanel extends JPanel {
-    private MapData previewMap = null; 
+    private MapData previewMap = null;
+    private final JPanel previewArea;
 
     public MapSelectPanel(Consumer<MapData> onMapSelected) {
+        // Use a 1280x720 base, but the layout will handle resizing
         setLayout(new BorderLayout());
-        setBackground(Color.BLACK); 
+        setBackground(new Color(20, 20, 25));
 
-        // --- TITLE ---
-        JLabel title = new JLabel("SELECT MAP", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 48));
-        title.setForeground(Color.WHITE);
-        title.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        // --- LEFT SIDE: SCROLLABLE LIST ---
+        JPanel listContainer = new JPanel();
+        listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
+        listContainer.setBackground(new Color(35, 35, 45));
 
-        // --- BUTTON ROW (Short and Horizontal) ---
         List<MapData> maps = MapData.getAllMaps();
-        // 1 row, columns match map count, 5px gap between boxes
-        JPanel buttonRow = new JPanel(new GridLayout(1, maps.size(), 5, 0));
-        buttonRow.setOpaque(false);
-
         for (MapData map : maps) {
             JButton btn = new JButton(map.name);
-            btn.setFont(new Font("Arial", Font.BOLD, 18));
+            btn.setMaximumSize(new Dimension(300, 50));
+            btn.setFont(new Font("Verdana", Font.BOLD, 16));
             btn.setFocusPainted(false);
+            btn.setAlignmentX(Component.CENTER_ALIGNMENT);
             
-            // Light blue-white styling
-            btn.setBackground(new Color(225, 240, 255));
-            btn.setForeground(new Color(30, 30, 50));
-            btn.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-            
+            // Modern Styling
+            btn.setBackground(new Color(60, 60, 75));
+            btn.setForeground(Color.WHITE);
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(20, 20, 25), 1),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            ));
+
             btn.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     previewMap = map;
-                    btn.setBackground(Color.WHITE); 
-                    repaint(); 
+                    btn.setBackground(new Color(100, 100, 255));
+                    repaint();
                 }
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    previewMap = null;
-                    btn.setBackground(new Color(225, 240, 255));
-                    repaint(); 
+                    btn.setBackground(new Color(60, 60, 75));
                 }
             });
 
             btn.addActionListener(e -> onMapSelected.accept(map));
-            buttonRow.add(btn);
+            listContainer.add(btn);
+            listContainer.add(Box.createRigidArea(new Dimension(0, 5))); // Spacer
         }
 
-        // --- THE FIX: TOP CONTAINER ---
-        // This panel holds the title and the buttons at the top of the screen
-        JPanel topContainer = new JPanel(new BorderLayout());
-        topContainer.setOpaque(false);
-        topContainer.add(title, BorderLayout.NORTH);
-        
-        // Give the button row a specific height (e.g., 100 pixels)
-        buttonRow.setPreferredSize(new Dimension(0, 100)); 
-        topContainer.add(buttonRow, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(listContainer);
+        scrollPane.setPreferredSize(new Dimension(300, 0));
+        scrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 2, Color.BLACK));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.WEST);
 
-        // Add the topContainer to the NORTH so it doesn't stretch vertically
-        add(topContainer, BorderLayout.NORTH);
+        // --- RIGHT SIDE: PREVIEW AREA ---
+        previewArea = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                drawMapPreview((Graphics2D) g);
+            }
+        };
+        previewArea.setBackground(new Color(10, 10, 15));
+        add(previewArea, BorderLayout.CENTER);
+
+        // --- TITLE ---
+        JLabel title = new JLabel("CHOOSE YOUR ARENA", SwingConstants.CENTER);
+        title.setFont(new Font("Impact", Font.PLAIN, 44));
+        title.setForeground(Color.WHITE);
+        title.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        add(title, BorderLayout.NORTH);
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g;
-
-        // The area below the buttons is now empty for the map preview
-        if (previewMap != null) {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            
-            // Draw platforms in their actual locations in the big empty space
-            for (Platform p : previewMap.platforms) {
-                g2.setColor(new Color(100, 100, 255, 150)); 
-                g2.fillRect((int)p.x, (int)p.y, (int)p.width, (int)p.height);
-                
-                g2.setColor(Color.CYAN);
-                g2.drawRect((int)p.x, (int)p.y, (int)p.width, (int)p.height);
-            }
-
-            g2.setFont(new Font("Arial", Font.ITALIC, 60));
-            g2.setColor(new Color(255, 255, 255, 20));
-            g2.drawString(previewMap.name, 50, getHeight() - 50);
+    private void drawMapPreview(Graphics2D g2) {
+        if (previewMap == null) {
+            g2.setColor(Color.GRAY);
+            g2.setFont(new Font("Arial", Font.PLAIN, 20));
+            g2.drawString("Hover over a map to preview", previewArea.getWidth()/2 - 120, previewArea.getHeight()/2);
+            return;
         }
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // 1. Calculate Scaling
+        // The game internal resolution is roughly 1280x720. 
+        // We scale the preview to fit the current window size.
+        double scaleX = (double) previewArea.getWidth() / 1280.0;
+        double scaleY = (double) previewArea.getHeight() / 720.0;
+        double scale = Math.min(scaleX, scaleY) * 0.8; // 80% size for padding
+
+        int offsetX = (int) (previewArea.getWidth() - (1280 * scale)) / 2;
+        int offsetY = (int) (previewArea.getHeight() - (720 * scale)) / 2;
+
+        // 2. Draw Background Box
+        g2.setColor(previewMap.backgroundColor);
+        g2.fillRect(offsetX, offsetY, (int)(1280 * scale), (int)(720 * scale));
+        g2.setColor(Color.WHITE);
+        g2.drawRect(offsetX, offsetY, (int)(1280 * scale), (int)(720 * scale));
+
+        // 3. Draw Platforms (Scaled)
+        for (Platform p : previewMap.platforms) {
+            int px = offsetX + (int) (p.x * scale);
+            int py = offsetY + (int) (p.y * scale);
+            int pw = (int) (p.width * scale);
+            int ph = (int) (p.height * scale);
+
+            // Platform Shadow
+            g2.setColor(new Color(0, 0, 0, 100));
+            g2.fillRect(px + 3, py + 3, pw, ph);
+
+            // Platform Body
+            g2.setColor(new Color(100, 100, 255));
+            g2.fillRect(px, py, pw, ph);
+            g2.setColor(Color.CYAN);
+            g2.drawRect(px, py, pw, ph);
+        }
+
+        // 4. Map Name Overlay
+        g2.setFont(new Font("Impact", Font.PLAIN, 50));
+        g2.setColor(new Color(255, 255, 255, 40));
+        g2.drawString(previewMap.name.toUpperCase(), offsetX + 20, offsetY + (int)(720 * scale) - 20);
     }
 }
