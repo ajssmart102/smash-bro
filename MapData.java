@@ -42,26 +42,41 @@ public class MapData {
 
                 } else if (line.startsWith("PLAT:") && currentMap != null) {
                     String[] p = line.substring(5).split(",");
+                    Platform plat = null;
                     
-                    // Convert all parts to trimmed strings to avoid NumberFormatErrors
-                    if (p.length == 4) {
-                        currentMap.platforms.add(new Platform(
+                    // --- STATIC PLATFORMS (4 or 5 parameters) ---
+                    if (p.length == 4 || p.length == 5) {
+                        plat = new Platform(
                             Float.parseFloat(p[0].trim()), 
                             Float.parseFloat(p[1].trim()), 
-                            Integer.parseInt(p[2].trim()), 
-                            Integer.parseInt(p[3].trim())
-                        ));
-                    } else if (p.length == 8) {
-                        currentMap.platforms.add(new Platform(
+                            (int)Float.parseFloat(p[2].trim()), 
+                            (int)Float.parseFloat(p[3].trim())
+                        );
+                        // Check for main stage flag (the 5th parameter)
+                        if (p.length == 5) {
+                            plat.isMainStage = p[4].trim().equals("1");
+                        }
+                    } 
+                    // --- MOVING PLATFORMS (8 or 9 parameters) ---
+                    else if (p.length == 8 || p.length == 9) {
+                        plat = new Platform(
                             Float.parseFloat(p[0].trim()), 
                             Float.parseFloat(p[1].trim()), 
-                            Integer.parseInt(p[2].trim()), 
-                            Integer.parseInt(p[3].trim()),
+                            (int)Float.parseFloat(p[2].trim()), 
+                            (int)Float.parseFloat(p[3].trim()),
                             Float.parseFloat(p[4].trim()), 
                             Float.parseFloat(p[5].trim()),
-                            Integer.parseInt(p[6].trim()), 
-                            Integer.parseInt(p[7].trim())
-                        ));
+                            (int)Float.parseFloat(p[6].trim()), 
+                            (int)Float.parseFloat(p[7].trim())
+                        );
+                        // Check for main stage flag (the 9th parameter)
+                        if (p.length == 9) {
+                            plat.isMainStage = p[8].trim().equals("1");
+                        }
+                    }
+
+                    if (plat != null) {
+                        currentMap.platforms.add(plat);
                     }
                 }
             }
@@ -69,10 +84,12 @@ public class MapData {
             System.err.println("Error reading maps.txt: " + e.getMessage());
             e.printStackTrace();
             
-            // Emergency Fallback so the game still runs
+            // Emergency Fallback
             if (maps.isEmpty()) {
                 MapData fallback = new MapData("Fallback Stage", Color.DARK_GRAY);
-                fallback.platforms.add(new Platform(200, 500, 880, 30));
+                Platform mainFloor = new Platform(200, 500, 880, 30);
+                mainFloor.isMainStage = true; // Make sure fallback is grabbable!
+                fallback.platforms.add(mainFloor);
                 maps.add(fallback);
             }
         }

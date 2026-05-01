@@ -49,7 +49,6 @@ public class Fighter {
     }
 
     public void applyKnockback(float launchX, float launchY) {
-        // Multiplier grows as damage % increases
         float knockbackMultiplier = 1.0f + (this.damage / 60.0f);
         float weightFactor = 2.0f - weight; 
 
@@ -84,9 +83,22 @@ public class Fighter {
             return; 
         }
 
+        // --- LEDGE LOGIC ---
         if (ledgeGrabbed) {
             velX = 0; velY = 0;
-            if (keyMap[keys[2]]) { velY = jumpForce; ledgeGrabbed = false; isHelpless = false; }
+            // Jump up from ledge
+            if (keyMap[keys[2]]) { 
+                velY = jumpForce; 
+                ledgeGrabbed = false; 
+                isHelpless = false; 
+                jumpsLeft = maxJumps - 1; // Leave 1 jump left for recovery
+            }
+            // Drop down from ledge
+            boolean isDown = (keys[0] == 65) ? keyMap[83] : keyMap[40];
+            if (isDown) {
+                ledgeGrabbed = false;
+                velY = 2; // Small nudge down
+            }
             return;
         }
 
@@ -121,11 +133,23 @@ public class Fighter {
         x += velX; 
         y += velY;
 
+        // --- COLLISION LOOP ---
         for (Platform p : platforms) {
-            if (velY > 0 && !ledgeGrabbed) {
-                if (Math.abs(x + width - p.x) < 15 && Math.abs(y - p.y) < 25) { ledgeGrabbed = true; x = p.x - width; y = p.y; return; }
-                if (Math.abs(x - (p.x + p.width)) < 15 && Math.abs(y - p.y) < 25) { ledgeGrabbed = true; x = p.x + p.width; y = p.y; return; }
+            // Ledge Grabbing (Only if Platform is Main Stage)
+            if (velY > 0 && !ledgeGrabbed && p.isMainStage) {
+                // Right side of fighter to left ledge
+                if (Math.abs(x + width - p.x) < 20 && Math.abs(y - p.y) < 30) { 
+                    ledgeGrabbed = true; x = p.x - width; y = p.y; 
+                    isHelpless = false; return; 
+                }
+                // Left side of fighter to right ledge
+                if (Math.abs(x - (p.x + p.width)) < 20 && Math.abs(y - p.y) < 30) { 
+                    ledgeGrabbed = true; x = p.x + p.width; y = p.y; 
+                    isHelpless = false; return; 
+                }
             }
+
+            // Standard Floor Collision
             if (velY >= 0 && x + width > p.x && x < p.x + p.width && y + height >= p.y && y + height <= p.y + p.height + velY + 2) {
                 y = p.y - height; velY = 0; jumpsLeft = maxJumps; isHelpless = false;
                 x += p.velX; y += p.velY; 
@@ -209,23 +233,19 @@ public class Fighter {
     }
 
     public void draw(Graphics2D g) {
-        // Shield Effect
         if (isShielding) {
             g.setColor(new Color(100, 200, 255, 120));
             g.fillOval((int)x - 15, (int)y - 5, width + 30, height + 10);
         }
 
-        // Smash Aura
         if (hasFinalSmash) {
             g.setColor(new Color(255, 255, 0, 50));
             g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
         }
 
-        // Character Body
         g.setColor(isHelpless ? Color.DARK_GRAY : color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
 
-        // Charging Bar
         if (isCharging) {
             g.setColor(Color.WHITE);
             g.fillRect((int)x, (int)y - 15, (int)((float)width * ((float)chargeFrames / MAX_CHARGE)), 6);
@@ -233,13 +253,11 @@ public class Fighter {
             g.drawRect((int)x, (int)y - 15, width, 6);
         }
 
-        // --- ATTACK EFFECTS (Hitboxes) ---
         Rectangle hb = getHitbox();
         if (hb != null) {
             if (currentAttack == AttackType.FINAL_SMASH) g.setColor(new Color(255, 255, 0, 180));
             else if (currentAttack == AttackType.GRAB) g.setColor(new Color(0, 255, 255, 150));
-            else g.setColor(new Color(255, 255, 0, 130)); // Standard Yellow/Gold
-            
+            else g.setColor(new Color(255, 255, 0, 130)); 
             g.fill(hb);
         }
     }

@@ -5,6 +5,10 @@ public class Platform {
     public float x, y, width, height;
     public float velX = 0, velY = 0;
     
+    // --- LEDGE GRAB FLAG ---
+    // If true, fighters can hang from the edges of this platform
+    public boolean isMainStage = false; 
+    
     // Movement boundaries
     private float startX, startY;
     private int rangeX = 0, rangeY = 0;
@@ -74,7 +78,12 @@ public class Platform {
         g.fillRect((int)x, (int)y, (int)width, (int)height);
         
         // Lighter Top Edge (Highlight)
-        g.setColor(new Color(150, 150, 170));
+        // We use a slightly different color if it's a "Main Stage" platform
+        if (isMainStage) {
+            g.setColor(new Color(180, 180, 200)); // Brighter highlight for main stage
+        } else {
+            g.setColor(new Color(120, 120, 140));
+        }
         g.fillRect((int)x, (int)y, (int)width, 4);
 
         // Black Border for clarity
