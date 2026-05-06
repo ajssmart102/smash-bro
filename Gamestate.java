@@ -85,16 +85,30 @@ public class Gamestate {
     }
 
     public void update() {
-        // 1. Update Fighters & Blast Zones
+        // --- 1. Update Platforms (CRITICAL for moving maps) ---
+        for (Platform p : platforms) {
+            p.update();
+        }
+
+        // --- 2. Update Fighters & Blast Zones ---
         for (Fighter f : fighters) {
             f.update(keys, platforms);
-            // Blast Zone detection
-            if (f.y > 850 || f.y < -600 || f.x < -200 || f.x > 1480) {
+            // Blast Zone detection (Respawn)
+            if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) {
                 if (f.stocks > 0) f.respawn(640, 300);
             }
         }
 
-        // 2. SmashBall Logic
+        // --- 3. Items & Combat ---
+        updateSmashBall();
+        updateCombat();
+
+        // --- 4. Effects Cleanup ---
+        for (HitEffect e : effects) e.life--; 
+        effects.removeIf(e -> e.life <= 0);
+    }
+
+    private void updateSmashBall() {
         if (smashBall == null || smashBall.isBroken) {
             respawnTimer++;
             if (respawnTimer >= RESPAWN_DELAY) {
@@ -103,48 +117,42 @@ public class Gamestate {
             }
         } else {
             smashBall.update(1280, 720); 
-
             for (Fighter f : fighters) {
                 Rectangle hb = f.getHitbox();
                 if (hb != null && hb.intersects(smashBall.getHitbox())) {
-                    if (f.currentAttack != Fighter.AttackType.NONE) {
-                        smashBall.health -= 2; 
-                        if (smashBall.health <= 0) {
-                            smashBall.isBroken = true;
-                            f.hasFinalSmash = true;
-                            // Blast everyone else away
-                            for (Fighter target : fighters) {
-                                if (target != f) {
-                                    target.velY = -12.0f;
-                                    target.velX = (target.x > smashBall.x) ? 18.0f : -18.0f;
-                                    effects.add(new HitEffect((int)target.x, (int)target.y));
-                                }
+                    smashBall.health -= (2 * f.attackDamageMultiplier); 
+                    if (smashBall.health <= 0) {
+                        smashBall.isBroken = true;
+                        f.hasFinalSmash = true;
+                        // Explosion uses the scaling knockback system
+                        for (Fighter target : fighters) {
+                            if (target != f) {
+                                float dir = (target.x > smashBall.x) ? 18f : -18f;
+                                target.applyKnockback(dir, -12f);
+                                effects.add(new HitEffect((int)target.x, (int)target.y));
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-        // 3. Combat Logic
+    private void updateCombat() {
         for (Fighter attacker : fighters) {
             if (attacker.isBeingHeld || attacker.ledgeGrabbed) continue;
             Rectangle hb = attacker.getHitbox();
+            
             if (hb != null) {
                 for (Fighter victim : fighters) {
                     if (attacker == victim) continue;
                     
-                    // Logic to ensure hit only registers once per attack animation
                     if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) {
                         handleHit(attacker, victim);
                     }
                 }
             }
         }
-
-        // 4. Effects Cleanup
-        for (HitEffect e : effects) e.life--; 
-        effects.removeIf(e -> e.life <= 0);
     }
 
     private void handleHit(Fighter attacker, Fighter victim) {
@@ -153,7 +161,7 @@ public class Gamestate {
             victim.isBeingHeld = true;
             victim.isShielding = false;
         } else if (victim.isShielding && attacker.currentAttack != Fighter.AttackType.FINAL_SMASH) {
-            attacker.velX = -attacker.facingDir * 6; // Shield push-back
+            attacker.velX = -attacker.facingDir * 7; 
         } else {
             if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) {
                 victim.damage += 50;
@@ -174,6 +182,9 @@ public class Gamestate {
                     victim.velY = -10.0f;
                 }
             }
+
+            // Apply scaling knockback
+            victim.applyKnockback(launchX, launchY);
             effects.add(new HitEffect((int)victim.x, (int)victim.y));
         }
         attacker.hitTargets.add(victim);
