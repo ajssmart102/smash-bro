@@ -301,11 +301,13 @@ public class Fighter
 
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
-    public Rectangle getHitbox() {
+    public Rectangle getHitbox() 
+    {
         if (attackTimer <= 0 || currentAttack == AttackType.NONE) return null; 
         int hx, hy, hw, hh;
-        switch (currentAttack) {
-            case GRAB: hx = (facingDir == 1) ? (int)x + width : (int)x - 35; hy = (int)y + 20; hw = 35; hh = 40; break;
+        switch (currentAttack)
+        {
+            case GRAB: hx = (facingDir == 1) ? (int)x + width : (int)x - 40; hy = (int)y + 20; hw = 45; hh = 40; break;
             case UP: hx = (int)x - 15; hy = (int)y - 50; hw = width + 30; hh = 60; break;
             case DOWN: hx = (int)x - 10; hy = (int)y + height; hw = width + 20; hh = 40; break;
             case UP_SPECIAL: hx = (int)x - 5; hy = (int)y - 10; hw = width + 10; hh = height + 10; break;
