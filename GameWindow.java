@@ -62,8 +62,10 @@ public class GameWindow extends JFrame implements KeyListener {
         gamePanel.requestFocusInWindow();
 
         if (gameLoop != null) gameLoop.stop();
-        gameLoop = new Timer(16, e -> {
-            if (state != null) {
+        gameLoop = new Timer(16, e -> 
+        {
+            if (state != null) 
+            {
                 state.update();
                 gamePanel.repaint();
             }
@@ -72,9 +74,11 @@ public class GameWindow extends JFrame implements KeyListener {
     }
 
     @Override
-    public void keyPressed(KeyEvent e) {
+    public void keyPressed(KeyEvent e)
+    {
         int code = e.getKeyCode();
-        if (state != null && code >= 0 && code < state.keys.length) {
+        if (state != null && code >= 0 && code < state.keys.length) 
+        {
             state.keys[code] = true;
         }
     }

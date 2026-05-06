@@ -26,7 +26,7 @@ public class GamePanel extends JPanel {
 
     for (Fighter f : state.fighters) {
         // 1. Move the fighter
-        f.update(keyMap, platforms);
+        f.update(keyMap, platforms, null);
 
         // 2. CHECK FOR DEATH (The "Blast Zone")
         // If they fall below the screen (800) or go off-screen
@@ -55,6 +55,13 @@ public class GamePanel extends JPanel {
         if (state.platforms != null) {
             for (Platform p : state.platforms) {
                 p.draw(g);
+            }
+        }
+
+        // --- NEW: DRAW ITEMS ---
+        if (state.itemList != null) {
+            for (int i = 0; i < state.itemList.size(); i++) {
+                state.itemList.get(i).draw(g);
             }
         }
 
