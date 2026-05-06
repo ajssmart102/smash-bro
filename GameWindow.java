@@ -11,7 +11,8 @@ public class GameWindow extends JFrame implements KeyListener
     private MapSelectPanel mapPanel;
     private Timer gameLoop;
 
-    public GameWindow() {
+    public GameWindow() 
+    {
         setTitle("Java Smash");
         setSize(1280, 720);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -22,8 +23,10 @@ public class GameWindow extends JFrame implements KeyListener
         setVisible(true);
     }
 
-    private void showCharacterMenu() {
-        menuPanel = new CharacterSelectPanel(characterChoice -> {
+    private void showCharacterMenu() 
+    {
+        menuPanel = new CharacterSelectPanel(characterChoice -> 
+        {
             showMapMenu(characterChoice); 
         });
         
@@ -33,8 +36,10 @@ public class GameWindow extends JFrame implements KeyListener
         repaint();
     }
 
-    private void showMapMenu(String characterChoice) {
-        mapPanel = new MapSelectPanel(chosenMap -> {
+    private void showMapMenu(String characterChoice) 
+    {
+        mapPanel = new MapSelectPanel(chosenMap -> 
+        {
             startGame(characterChoice, chosenMap); 
         });
 
