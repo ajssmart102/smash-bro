@@ -1,7 +1,8 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.io.*;
 import java.util.*;
-import java.util.List; 
+import java.util.List;
 
 public class Gamestate {
     public List<Fighter> fighters = new ArrayList<>();
@@ -9,46 +10,78 @@ public class Gamestate {
     public List<HitEffect> effects = new ArrayList<>();
     public boolean[] keys = new boolean[65536];
 
+    // Registry for your character stats
+    private Map<String, CharacterStats> characterRegistry = new HashMap<>();
+
     public SmashBall smashBall;
     private int respawnTimer = 0;
     private final int RESPAWN_DELAY = 600; 
 
+    public Gamestate() {
+        // Load the data as soon as the game state is created
+        loadCharacterData();
+    }
+
+    private void loadCharacterData() {
+        try (BufferedReader br = new BufferedReader(new FileReader("roster.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] v = line.split(",");
+                if (v.length < 8) continue;
+
+                String name = v[0].trim();
+                float ws = Float.parseFloat(v[1]);
+                float jf = Float.parseFloat(v[2]);
+                float gr = Float.parseFloat(v[3]);
+                float wt = Float.parseFloat(v[4]);
+                float dm = Float.parseFloat(v[5]);
+                int w = Integer.parseInt(v[6]); // Parse Width
+                int h = Integer.parseInt(v[7]); // Parse Height
+
+                characterRegistry.put(name, new CharacterStats(name, ws, jf, gr, wt, dm, w, h));
+            }
+        } catch (Exception e) {
+            System.err.println("Could not load roster.txt: " + e.getMessage());
+            // Fallback for safety
+            characterRegistry.put("Standard", new CharacterStats("Standard", 7.0f, -14f, 0.5f, 1.0f, 1.0f, 50, 80));
+        }
+    }
+
+    public CharacterStats getStatsFor(String name) {
+        if (characterRegistry.containsKey(name)) {
+            return characterRegistry.get(name);
+        } else {
+            System.out.println("Warning: Character '" + name + "' not found. Using Standard.");
+            return characterRegistry.get("Standard");
+        }
+    }
+
     public void setupSession(String p1Char, String p2Char, MapData chosenMap) {
+        System.out.println("Attempting to load: P1='" + p1Char + "', P2='" + p2Char + "'");
+
         fighters.clear();
         platforms.clear();
         effects.clear();
 
-        // 1. Load Map Platforms
         if (chosenMap != null && chosenMap.platforms != null) {
             this.platforms.addAll(chosenMap.platforms);
         } else {
-            platforms.add(new Platform(200, 500, 880, 30)); // Default floor
+            platforms.add(new Platform(200, 500, 880, 30)); 
         }
         
-        // 2. Define Keybinds
         int[] p1Keys = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_C, KeyEvent.VK_F, KeyEvent.VK_G, KeyEvent.VK_V};
         int[] p2Keys = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_M, KeyEvent.VK_L, KeyEvent.VK_K, KeyEvent.VK_PERIOD};
 
-        // 3. Create Fighters
-        Fighter player1 = new Fighter(300, 300, p1Char, Color.BLUE, p1Keys);
-        Fighter player2 = new Fighter(880, 300, p2Char, Color.RED, p2Keys);
-        
-        applyStats(player1, p1Char);
-        applyStats(player2, p2Char);
+        // Get stats
+        CharacterStats p1Stats = getStatsFor(p1Char.trim());
+        CharacterStats p2Stats = getStatsFor(p2Char.trim());
 
+        // Use those stats directly in the constructor
+        Fighter player1 = new Fighter(300, 300, p1Stats, Color.BLUE, p1Keys);
+        Fighter player2 = new Fighter(880, 300, p2Stats, Color.RED, p2Keys);
+        
         fighters.add(player1);
         fighters.add(player2);
-    }
-
-    private void applyStats(Fighter f, String charName) {
-        switch (charName) {
-            case "Tank": 
-                f.weight = 1.4f; f.walkSpeed = 4.5f; f.attackDamageMultiplier = 1.2f; break;
-            case "Speedster": 
-                f.weight = 0.7f; f.walkSpeed = 9.0f; f.jumpForce = -15f; break;
-            case "Floaty": 
-                f.gravity = 0.25f; f.weight = 0.8f; break;
-        }
     }
 
     public void update() {
@@ -130,28 +163,24 @@ public class Gamestate {
         } else if (victim.isShielding && attacker.currentAttack != Fighter.AttackType.FINAL_SMASH) {
             attacker.velX = -attacker.facingDir * 7; 
         } else {
-            // Calculate Damage
-            float baseDmg = 10f;
-            if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) baseDmg = 45f;
-            
-            victim.damage += (baseDmg * attacker.chargeMultiplier * attacker.attackDamageMultiplier);
-
-            // Determine Base Launch Angle
-            float launchX = 0, launchY = 0;
-
-            switch (attacker.currentAttack) {
-                case FINAL_SMASH:
-                    launchX = attacker.facingDir * 22f; launchY = -18f; break;
-                case DOWN:
-                    launchX = attacker.facingDir * 2f; launchY = 16f; break; // Spike
-                case UP:
-                    launchX = attacker.facingDir * 1f; launchY = -19f; break;
-                case SIDE:
-                    launchX = attacker.facingDir * 15f; launchY = -7f; break;
-                case UP_SPECIAL:
-                    launchX = attacker.facingDir * 4f; launchY = -14f; break;
-                default: // Neutral
-                    launchX = attacker.facingDir * 9f; launchY = -10f; break;
+            if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) {
+                victim.damage += 50;
+                victim.velY = -22.0f; 
+                victim.velX = attacker.facingDir * 20.0f;
+            } else {
+                // FIXED: Standard Attack Calculation using character stats
+                float baseDamage = 10.0f;
+                float calculatedDamage = baseDamage * attacker.stats.dm * attacker.chargeMultiplier;
+                
+                victim.damage += calculatedDamage;
+                victim.ledgeGrabbed = false;
+                
+                if (attacker.currentAttack == Fighter.AttackType.DOWN) {
+                    victim.velY = 14.0f; // Spike effect
+                } else {
+                    victim.velX = attacker.facingDir * (5 + victim.damage/8);
+                    victim.velY = -10.0f;
+                }
             }
 
             // Apply scaling knockback
