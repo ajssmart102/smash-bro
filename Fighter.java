@@ -1,7 +1,8 @@
 import java.awt.*;
 import java.util.*;
 
-public class Fighter {
+public class Fighter 
+{
     // Basic Physics & Identity
     public float x, y, velX, velY;
     public int width = 50, height = 80;

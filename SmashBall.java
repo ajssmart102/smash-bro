@@ -1,13 +1,15 @@
 import java.awt.*;
 import java.util.Random;
 
-public class SmashBall {
+public class SmashBall 
+{
     public float x, y, velX, velY;
     public int width = 40, height = 40;
     public int health = 100;
     public boolean isBroken = false;
 
-    public SmashBall(int x, int y) {
+    public SmashBall(int x, int y) 
+    {
         this.x = x;
         this.y = y;
         // Random starting velocity
@@ -16,7 +18,8 @@ public class SmashBall {
         this.velY = (rand.nextFloat() * 8) - 4;
     }
 
-    public void update(int screenWidth, int screenHeight) {
+    public void update(int screenWidth, int screenHeight) 
+    {
         // Move the ball
         x += velX;
         y += velY;
@@ -26,12 +29,15 @@ public class SmashBall {
         if (y <= 0 || y + height >= screenHeight) velY *= -1;
     }
 
-    public Rectangle getHitbox() {
+    public Rectangle getHitbox() 
+    {
         return new Rectangle((int)x, (int)y, width, height);
     }
 
-    public void draw(Graphics2D g) {
-        if (!isBroken) {
+    public void draw(Graphics2D g) 
+    {
+        if (!isBroken) 
+        {
             g.setColor(Color.YELLOW);
             g.fillOval((int)x, (int)y, width, height);
             // Optional: Draw a "health" indicator on the ball

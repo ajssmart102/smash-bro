@@ -3,7 +3,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class GameWindow extends JFrame implements KeyListener {
+public class GameWindow extends JFrame implements KeyListener 
+{
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;

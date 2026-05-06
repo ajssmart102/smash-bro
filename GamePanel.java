@@ -2,14 +2,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
-public class GamePanel extends JPanel {
+public class GamePanel extends JPanel 
+{
     private Gamestate state;
     
     // Aesthetic Constants
     private static final Color BG_TOP = new Color(20, 20, 45);
     private static final Color BG_BOTTOM = new Color(40, 40, 80);
 
-    public GamePanel(Gamestate state) {
+    public GamePanel(Gamestate state) 
+    {
         this.state = state;
         
         // This ensures the panel fills the window correctly
@@ -21,21 +23,27 @@ public class GamePanel extends JPanel {
         // Focusable allows the panel to be the target of keyboard inputs
         setFocusable(true);
     }
-    public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms) 
+    {
     if (state.fighters == null) return;
 
-    for (Fighter f : state.fighters) {
+    for (Fighter f : state.fighters) 
+        {
         // 1. Move the fighter
         f.update(keyMap, platforms, null);
 
         // 2. CHECK FOR DEATH (The "Blast Zone")
         // If they fall below the screen (800) or go off-screen
-        if (f.y > 800 || f.y < -500 || f.x < -100 || f.x > getWidth() + 100) {
-            if (f.stocks > 0) {
-                f.respawn(640, 100); // 640/100 is your start position
-            } else {
-                // Handle "Game Over" for this player here
-                }
+        if (f.y > 800 || f.y < -500 || f.x < -100 || f.x > getWidth() + 100) 
+            {
+                if (f.stocks > 0) 
+                {
+                    f.respawn(640, 100); // 640/100 is your start position
+                } 
+                else 
+                    {
+                    // Handle "Game Over" for this player here
+                    }
             }
         }
     }
@@ -52,22 +60,28 @@ public class GamePanel extends JPanel {
         drawBackground(g);
 
         // 2. DRAW PLATFORMS
-        if (state.platforms != null) {
-            for (Platform p : state.platforms) {
+        if (state.platforms != null) 
+        {
+            for (Platform p : state.platforms) 
+            {
                 p.draw(g);
             }
         }
 
         // --- NEW: DRAW ITEMS ---
-        if (state.itemList != null) {
-            for (int i = 0; i < state.itemList.size(); i++) {
+        if (state.itemList != null) 
+        {
+            for (int i = 0; i < state.itemList.size(); i++) 
+            {
                 state.itemList.get(i).draw(g);
             }
         }
 
         // 3. DRAW FIGHTERS
-        if (state.fighters != null) {
-            for (Fighter f : state.fighters) {
+        if (state.fighters != null) 
+        {
+            for (Fighter f : state.fighters) 
+            {
                 f.draw(g);
             }
         }
