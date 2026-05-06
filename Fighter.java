@@ -66,19 +66,28 @@ public class Fighter
 
     public void update(boolean[] keyMap, java.util.List<Platform> platforms, java.util.List<Items> items) 
     {
+        if (hitstun > 0)
+        {
+            hitstun--;
+        }
+        
         if (isBeingHeld) 
         { 
             velX = 0; 
-            velY = 0; 
-        }
-        if (hitstun > 0) 
-        {
-            hitstun--;
-            velX *= 0.98f; // Air friction during knockback
+            velY = 0;
+            return;
         }
 
         // 1. ITEM ATTACHMENT
-        if (heldItem != null) {
+        if (grabbedEnemy != null) 
+        {
+            grabbedEnemy.x = this.x + (facingDir * 40);
+            grabbedEnemy.y = this.y;
+            grabbedEnemy.isBeingHeld = true;
+        }
+        
+        if (heldItem != null) 
+        {
             heldItem.isHeld = true;
             heldItem.x = (facingDir == 1) ? this.x + width - 5 : this.x - heldItem.width + 5;
             heldItem.y = this.y + 25;
@@ -87,9 +96,11 @@ public class Fighter
         }
 
         // 2. LEDGE LOGIC (Highest Priority)
-        if (ledgeGrabbed) {
+        if (ledgeGrabbed) 
+        {
             velX = 0; velY = 0;
-            if (keyMap[keys[2]]) { // Up to jump off
+            if (keyMap[keys[2]]) 
+            { // Up to jump off
                 velY = jumpForce;
                 ledgeGrabbed = false;
                 isHelpless = false;
@@ -103,49 +114,53 @@ public class Fighter
         boolean isDownPressed = (name.equals("P1")) ? keyMap[java.awt.event.KeyEvent.VK_S] : keyMap[keys[2] + 1]; // Adjusted for consistency
 
         // 4. GRAB / ITEM / THROW LOGIC (Consolidated)
-        if (keyMap[keys[5]] && attackTimer <= 0 && !isShielding) 
+        if (hitstun <= 0) 
         {
-            if (heldItem != null) 
+            if (keyMap[keys[5]] && attackTimer <= 0 && !isShielding)
             {
-                throwItems(keyMap, isDownPressed);
-            } 
-            else if (grabbedEnemy != null) 
-            {
-                handleThrows(keyMap, isDownPressed);
-            } 
-            else 
-            {
-                // Try to pick up item first
-                Items nearby = null;
-                if (items != null) 
+                if (heldItem != null)
                 {
-                    for (Items i : items) 
-                    {
-                        if (this.getBounds().intersects(i.getBounds()) && !i.isHeld) 
-                        {
-                            nearby = i;
-                            break;
-                        }
-                    }
+                    throwItems(keyMap, isDownPressed);
                 }
-
-                if (nearby != null) 
+                else if (grabbedEnemy != null)
                 {
-                    heldItem = nearby;
-                    heldItem.isHeld = true;
-                    heldItem.owner = this;
-                    attackTimer = 10;
-                } 
+                    handleThrows(keyMap, isDownPressed);
+                }
                 else 
                 {
-                    // Normal Fighter Grab
-                    currentAttack = AttackType.GRAB;
-                    attackTimer = 18;
-                    hitTargets.clear();
+                    // Try to pick up item first
+                    Items nearby = null;
+                    if (items != null) 
+                    {
+                        for (Items i : items) 
+                        {
+                            if (this.getBounds().intersects(i.getBounds()) && !i.isHeld) 
+                            {
+                                nearby = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (nearby != null) 
+                    {
+                        heldItem = nearby;
+                        heldItem.isHeld = true;
+                        heldItem.owner = this;
+                        attackTimer = 10;
+                    } 
+                    else 
+                    {
+                        // Normal Fighter Grab
+                        currentAttack = AttackType.GRAB;
+                        attackTimer = 18;
+                        hitTargets.clear();
+                    }
                 }
+                keyMap[keys[5]] = false; // Consume input
             }
-            keyMap[keys[5]] = false; // Consume input
-        }
+    }
+        
 
         // 5. SPECIALS & SHIELDING
         if (keyMap[keys[3]] && attackTimer <= 0 && !isCharging && Math.abs(velY) < 1.0f) {
@@ -253,7 +268,7 @@ public class Fighter
 
     private void handleThrows(boolean[] keyMap, boolean isDownPressed) 
     {
-        float tx = 0, ty = 0;
+        float tx = 15, ty = 10;
         if (keyMap[keys[0]] || keyMap[keys[1]]) { tx = facingDir * 14; ty = -4; }
         else if (keyMap[keys[2]]) { tx = 0; ty = -16; }
         else if (isDownPressed) { tx = 0; ty = 12; }
@@ -263,6 +278,8 @@ public class Fighter
         grabbedEnemy.velY = ty;
         grabbedEnemy.isBeingHeld = false;
         grabbedEnemy.hitstun = 20;
+        grabbedEnemy.damage += 5;
+        
         grabbedEnemy = null;
         attackTimer = 15;
     }
