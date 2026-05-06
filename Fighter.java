@@ -9,11 +9,13 @@ public class Fighter {
     public int facingDir = 1;
 
     // --- CHARACTER STATS (Applied by Gamestate) ---
-    public float walkSpeed = 7f;
-    public float jumpForce = -14f;
-    public float gravity = 0.5f;
-    public float weight = 1.0f; // Multiplier for gravity/launch speed
-    public float attackDamageMultiplier = 1.0f;
+    public CharacterStats stats;
+    public float walkSpeed;
+    public float jumpForce;
+    public float gravity;
+    public float weight; // Multiplier for gravity/launch speed
+    public float attackDamageMultiplier;
+
     public float maxHealth = 100f;
     public float currentHealth = 100f;
     
@@ -47,8 +49,21 @@ public class Fighter {
 
     protected int[] keys; 
 
-    public Fighter(float x, float y, String name, Color color, int[] keys) {
-        this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
+    public Fighter(float x, float y, CharacterStats stats, Color color, int[] keys) {
+    this.x = x; 
+    this.y = y; 
+    this.color = color; 
+    this.keys = keys;
+
+    this.stats = stats;
+    
+    // Now Java knows what 'stats' is!
+    this.name = stats.name;
+    this.walkSpeed = stats.walkSpeed;
+    this.jumpForce = stats.jumpForce;
+    this.gravity = stats.gravity;
+    this.weight = stats.weight;
+    this.attackDamageMultiplier = stats.dm;
     }
     
     public void respawn(float startX, float startY) {

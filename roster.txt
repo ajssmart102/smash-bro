@@ -1,44 +1,6 @@
-==================================================
-           SMASH GAME CHARACTER ROSTER            
-==================================================
-
-Character: STANDARD
-----------------------------------------
-Speed Stat:    5/10
-Damage Output: 5/10
-Playstyle:     Balanced stats. Good for beginners.
-
-
-Character: TANK
-----------------------------------------
-Speed Stat:    2/10
-Damage Output: 8/10
-Playstyle:     Slow, heavy-hitting character. High knockback.
-
-
-Character: SPEEDSTER
-----------------------------------------
-Speed Stat:    9/10
-Damage Output: 3/10
-Playstyle:     Extremely fast, but deals low damage per hit.
-
-
-Character: BRAWLER
-----------------------------------------
-Speed Stat:    4/10
-Damage Output: 7/10
-Playstyle:     Mid-range speed with strong close-quarters combat.
-
-
-Character: FLOATY
-----------------------------------------
-Speed Stat:    6/10
-Damage Output: 4/10
-Playstyle:     High jump height and air drift, difficult to control but evasive.
-
-
-Character: GLASS CANNON
-----------------------------------------
-Speed Stat:    7/10
-Damage Output: 10/10
-Playstyle:     Maximum damage potential, but takes more knockback when hit.
+Tank,3.5,-14.0,0.5,1.3,1.3,70,100
+Speedster,8.0,-16.0,0.4,0.7,0.7,45,75
+Floaty,7.0,-14.0,0.15,1.0,1.0,50,80
+Standard,7.0,-14.0,0.5,1.0,1.0,50,80
+Brawler,5.0,-14.0,0.5,1.1,1.1,60,90
+Glass Cannon,7.0,-15.0,0.5,0.8,1.5,40,85

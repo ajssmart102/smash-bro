@@ -1,7 +1,8 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.io.*;
 import java.util.*;
-import java.util.List; 
+import java.util.List;
 
 public class Gamestate {
     public List<Fighter> fighters = new ArrayList<>();
@@ -9,49 +10,78 @@ public class Gamestate {
     public List<HitEffect> effects = new ArrayList<>();
     public boolean[] keys = new boolean[65536];
 
+    // Registry for your character stats
+    private Map<String, CharacterStats> characterRegistry = new HashMap<>();
+
     public SmashBall smashBall;
     private int respawnTimer = 0;
     private final int RESPAWN_DELAY = 600; 
 
-    // FIXED: Now accepts P1 choice, P2 choice, and the Map object
+    public Gamestate() {
+        // Load the data as soon as the game state is created
+        loadCharacterData();
+    }
+
+    private void loadCharacterData() {
+        try (BufferedReader br = new BufferedReader(new FileReader("roster.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] v = line.split(",");
+                if (v.length < 8) continue;
+
+                String name = v[0].trim();
+                float ws = Float.parseFloat(v[1]);
+                float jf = Float.parseFloat(v[2]);
+                float gr = Float.parseFloat(v[3]);
+                float wt = Float.parseFloat(v[4]);
+                float dm = Float.parseFloat(v[5]);
+                int w = Integer.parseInt(v[6]); // Parse Width
+                int h = Integer.parseInt(v[7]); // Parse Height
+
+                characterRegistry.put(name, new CharacterStats(name, ws, jf, gr, wt, dm, w, h));
+            }
+        } catch (Exception e) {
+            System.err.println("Could not load roster.txt: " + e.getMessage());
+            // Fallback for safety
+            characterRegistry.put("Standard", new CharacterStats("Standard", 7.0f, -14f, 0.5f, 1.0f, 1.0f, 50, 80));
+        }
+    }
+
+    public CharacterStats getStatsFor(String name) {
+        if (characterRegistry.containsKey(name)) {
+            return characterRegistry.get(name);
+        } else {
+            System.out.println("Warning: Character '" + name + "' not found. Using Standard.");
+            return characterRegistry.get("Standard");
+        }
+    }
+
     public void setupSession(String p1Char, String p2Char, MapData chosenMap) {
+        System.out.println("Attempting to load: P1='" + p1Char + "', P2='" + p2Char + "'");
+
         fighters.clear();
         platforms.clear();
         effects.clear();
 
-        // 1. Load map platforms from the MapData object
         if (chosenMap != null && chosenMap.platforms != null) {
             this.platforms.addAll(chosenMap.platforms);
         } else {
-            platforms.add(new Platform(200, 500, 880, 30)); // Fallback floor
+            platforms.add(new Platform(200, 500, 880, 30)); 
         }
         
-        // 2. Define Controls
-        // P1: A, D, W, C, F, G, V
         int[] p1Keys = {KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_C, KeyEvent.VK_F, KeyEvent.VK_G, KeyEvent.VK_V};
-        
-        // P2: Left, Right, Up, M, L, K, PERIOD
         int[] p2Keys = {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_M, KeyEvent.VK_L, KeyEvent.VK_K, KeyEvent.VK_PERIOD};
 
-        // 3. Add Fighters using the names selected from the menu
-        Fighter player1 = new Fighter(300, 300, p1Char, Color.BLUE, p1Keys);
-        Fighter player2 = new Fighter(880, 300, p2Char, Color.RED, p2Keys);
-        
-        // Apply unique stats based on character name (Example)
-        applyStats(player1, p1Char);
-        applyStats(player2, p2Char);
+        // Get stats
+        CharacterStats p1Stats = getStatsFor(p1Char.trim());
+        CharacterStats p2Stats = getStatsFor(p2Char.trim());
 
+        // Use those stats directly in the constructor
+        Fighter player1 = new Fighter(300, 300, p1Stats, Color.BLUE, p1Keys);
+        Fighter player2 = new Fighter(880, 300, p2Stats, Color.RED, p2Keys);
+        
         fighters.add(player1);
         fighters.add(player2);
-    }
-
-    // Helper to make different characters feel unique
-    private void applyStats(Fighter f, String charName) {
-        switch (charName) {
-            case "Tank": f.weight = 1.3f; f.walkSpeed = 3.5f; break;
-            case "Speedster": f.weight = 0.7f; f.walkSpeed = 8.0f; break;
-            case "Floaty": f.gravity = 0.15f; break;
-        }
     }
 
     public void update() {
@@ -130,8 +160,11 @@ public class Gamestate {
                 victim.velY = -22.0f; 
                 victim.velX = attacker.facingDir * 20.0f;
             } else {
-                // Standard Attack Calculation
-                victim.damage += (12 * attacker.chargeMultiplier);
+                // FIXED: Standard Attack Calculation using character stats
+                float baseDamage = 10.0f;
+                float calculatedDamage = baseDamage * attacker.stats.dm * attacker.chargeMultiplier;
+                
+                victim.damage += calculatedDamage;
                 victim.ledgeGrabbed = false;
                 
                 if (attacker.currentAttack == Fighter.AttackType.DOWN) {
