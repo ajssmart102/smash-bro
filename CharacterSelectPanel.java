@@ -2,10 +2,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
 
-public class CharacterSelectPanel extends JPanel {
+public class CharacterSelectPanel extends JPanel 
+{
     
     // This allows us to "send" the choice back to the GameWindow
-    public CharacterSelectPanel(Consumer<String> onChoiceMade) {
+    public CharacterSelectPanel(Consumer<String> onChoiceMade) 
+    {
         setLayout(new BorderLayout());
         setBackground(new Color(20, 20, 40));
 
@@ -26,7 +28,8 @@ public class CharacterSelectPanel extends JPanel {
         add(buttonPanel, BorderLayout.CENTER);
     }
 
-    private JButton createCharButton(String name, Color color, Consumer<String> callback) {
+    private JButton createCharButton(String name, Color color, Consumer<String> callback) 
+    {
         JButton btn = new JButton(name);
         btn.setPreferredSize(new Dimension(250, 350));
         btn.setFont(new Font("Arial", Font.BOLD, 24));

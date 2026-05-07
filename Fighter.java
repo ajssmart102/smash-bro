@@ -44,11 +44,13 @@ public class Fighter
 
     protected int[] keys; 
 
-    public Fighter(float x, float y, String name, Color color, int[] keys) {
+    public Fighter(float x, float y, String name, Color color, int[] keys) 
+    {
         this.x = x; this.y = y; this.name = name; this.color = color; this.keys = keys;
     }
     
-    public void respawn(float startX, float startY) {
+    public void respawn(float startX, float startY) 
+    {
         this.x = startX; this.y = startY;
         this.velX = 0; this.velY = 0;
         this.stocks--;
