@@ -90,7 +90,7 @@ public class Gamestate
         fighters.add(player2);
 
         // Add a test item in the middle of the stage
-        throwableItems.add(new ThrowableItem(640, 100));
+        throwableItems.add(new ThrowableItem(600, 300));
     }
 
     public void update() 

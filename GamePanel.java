@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
-public class GamePanel extends JPanel 
+public class GamePanel extends JPanel
 {
     private Gamestate state;
     
@@ -49,7 +49,8 @@ public class GamePanel extends JPanel
     }
 
     @Override
-    protected void paintComponent(Graphics g0) {
+    protected void paintComponent(Graphics g0) 
+    {
         super.paintComponent(g0);
         Graphics2D g = (Graphics2D) g0;
 
@@ -60,28 +61,40 @@ public class GamePanel extends JPanel
         drawBackground(g);
 
         // 2. DRAW PLATFORMS
-        if (state.platforms != null) {
-            for (Platform p : state.platforms) {
+        if (state.platforms != null) 
+        {
+            for (Platform p : state.platforms) 
+            {
                 p.draw(g);
             }
         }
 
+        for (ThrowableItem item : state.throwableItems)
+        {
+            item.draw((Graphics2D) g);
+        }
+
         // 3. DRAW FIGHTERS
-        if (state.fighters != null) {
-            for (Fighter f : state.fighters) {
+        if (state.fighters != null) 
+        {
+            for (Fighter f : state.fighters) 
+            {
                 f.draw(g);
             }
         }
 
-        if (state.smashBall != null && !state.smashBall.isBroken) {
+        if (state.smashBall != null && !state.smashBall.isBroken) 
+        {
             state.smashBall.draw(g);
         }
 
         // 4. DRAW EFFECTS (Hit sparks, etc.)
-        if (state.effects != null) {
+        if (state.effects != null) 
+        {
             // Use a standard for-loop to avoid ConcurrentModificationException 
             // if effects are added while we are drawing them.
-            for (int i = 0; i < state.effects.size(); i++) {
+            for (int i = 0; i < state.effects.size(); i++) 
+            {
                 state.effects.get(i).draw(g);
             }
         }
@@ -90,7 +103,8 @@ public class GamePanel extends JPanel
         drawHUD(g);
     }
 
-    private void drawBackground(Graphics2D g) {
+    private void drawBackground(Graphics2D g) 
+    {
         // Creates a nice dark sky gradient
         GradientPaint gradient = new GradientPaint(0, 0, BG_TOP, 0, getHeight(), BG_BOTTOM);
         g.setPaint(gradient);
@@ -102,12 +116,14 @@ public class GamePanel extends JPanel
         for (int i = 0; i < getHeight(); i += 50) g.drawLine(0, i, getWidth(), i);
     }
 
-    private void drawHUD(Graphics2D g) {
+    private void drawHUD(Graphics2D g) 
+    {
         if (state.fighters == null) return;
 
         g.setFont(new Font("Arial", Font.BOLD, 30));
         
-        for (int i = 0; i < state.fighters.size(); i++) {
+        for (int i = 0; i < state.fighters.size(); i++) 
+            {
             Fighter f = state.fighters.get(i);
             
             // Position HUD: Player 1 on left, Player 2 on right
