@@ -102,6 +102,7 @@ public class Gamestate {
             for (Fighter f : fighters) {
                 Rectangle hb = f.getHitbox();
                 if (hb != null && hb.intersects(smashBall.getHitbox())) {
+                    // FIXED: Using stats.dm to match CharacterStats field
                     smashBall.health -= (2 * f.stats.dm); 
                     if (smashBall.health <= 0) {
                         smashBall.isBroken = true;
@@ -154,26 +155,40 @@ public class Gamestate {
 
         if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) {
             damageDealt = 50;
-            launchY = -22.0f;
-            launchX = attacker.facingDir * 20.0f;
+            launchY = -25.0f;
+            launchX = attacker.facingDir * 35.0f;
         } else {
-            // Standard Attack Calculation
+            // 1. Calculate Standard Damage
             float baseDamage = 10.0f;
             damageDealt = baseDamage * attacker.stats.dm * attacker.chargeMultiplier;
             
+            // 2. Base Knockback Power scaling
+            float power = 5 + (victim.damage / 8);
+            
+            // 3. THE 300% DEATH MULTIPLIER
+            // If victim is at or above 250%, we multiply launch power significantly
+            if (victim.damage >= 250f) {
+                power *= 5.0f;
+            }
+
             victim.ledgeGrabbed = false;
             
             if (attacker.currentAttack == Fighter.AttackType.DOWN) {
-                launchX = attacker.facingDir * 2; // Minimal horizontal
-                launchY = 14.0f; // Spike effect
+                launchX = attacker.facingDir * 2; 
+                launchY = Math.min(power, 45.0f); // Spike down
             } else {
-                launchX = attacker.facingDir * (5 + victim.damage/8);
-                launchY = -10.0f;
+                // Horizontal launch: Capped at 60.0f for engine stability
+                launchX = attacker.facingDir * Math.min(power, 60.0f);
+                launchY = -12.0f;
             }
         }
 
-        // Apply results
+        // --- Apply Results & Hard Cap at 300% ---
         victim.damage += damageDealt;
+        if (victim.damage > 300f) {
+            victim.damage = 300f;
+        }
+
         victim.applyKnockback(launchX, launchY);
         effects.add(new HitEffect((int)victim.x, (int)victim.y));
         attacker.hitTargets.add(victim);
