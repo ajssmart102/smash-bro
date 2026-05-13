@@ -3,14 +3,16 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class GameWindow extends JFrame implements KeyListener {
+public class GameWindow extends JFrame implements KeyListener 
+{
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
     private MapSelectPanel mapPanel;
     private Timer gameLoop;
 
-    public GameWindow() {
+    public GameWindow() 
+    {
         setTitle("Java Smash");
         setSize(1280, 720);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -21,9 +23,11 @@ public class GameWindow extends JFrame implements KeyListener {
         setVisible(true);
     }
 
-    private void showCharacterMenu() {
+    private void showCharacterMenu() 
+    {
         // Updated to handle the BiConsumer (p1, p2)
-        menuPanel = new CharacterSelectPanel((p1Choice, p2Choice) -> {
+        menuPanel = new CharacterSelectPanel((p1Choice, p2Choice) -> 
+        {
             showMapMenu(p1Choice, p2Choice); 
         });
         
@@ -64,8 +68,10 @@ public class GameWindow extends JFrame implements KeyListener {
         gamePanel.requestFocusInWindow();
 
         if (gameLoop != null) gameLoop.stop();
-        gameLoop = new Timer(16, e -> {
-            if (state != null) {
+        gameLoop = new Timer(16, e -> 
+        {
+            if (state != null) 
+            {
                 state.update();
                 gamePanel.repaint();
             }
