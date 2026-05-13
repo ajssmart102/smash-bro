@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.util.*;
-import java.util.ArrayList;
 
 public class Fighter 
 {
