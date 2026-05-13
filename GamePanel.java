@@ -2,14 +2,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
-public class GamePanel extends JPanel {
+public class GamePanel extends JPanel 
+{
     private Gamestate state;
     
     // Aesthetic Constants
     private static final Color BG_TOP = new Color(20, 20, 45);
     private static final Color BG_BOTTOM = new Color(40, 40, 80);
 
-    public GamePanel(Gamestate state) {
+    public GamePanel(Gamestate state) 
+    {
         this.state = state;
         
         // This ensures the panel fills the window correctly

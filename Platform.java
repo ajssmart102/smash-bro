@@ -1,6 +1,7 @@
 import java.awt.*;
 
-public class Platform {
+public class Platform 
+{
     // Changed to float for smoother sub-pixel movement
     public float x, y, width, height;
     public float velX = 0, velY = 0;

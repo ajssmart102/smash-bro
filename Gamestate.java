@@ -3,6 +3,7 @@ import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.ArrayList;
 
 public class Gamestate 
 {
@@ -103,7 +104,7 @@ public class Gamestate
 
         for (Fighter f : fighters) 
         {
-            f.update(keys, platforms, throwableItems);
+            f.update(this.keys, this.platforms, this.throwableItems);
             if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
             {
                 if (f.stocks > 0) f.respawn(640, 300);

@@ -5,11 +5,13 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class MapSelectPanel extends JPanel {
+public class MapSelectPanel extends JPanel 
+{
     private MapData previewMap = null;
     private final JPanel previewArea;
 
-    public MapSelectPanel(Consumer<MapData> onMapSelected) {
+    public MapSelectPanel(Consumer<MapData> onMapSelected) 
+    {
         // Use a 1280x720 base, but the layout will handle resizing
         setLayout(new BorderLayout());
         setBackground(new Color(20, 20, 25));
@@ -20,7 +22,8 @@ public class MapSelectPanel extends JPanel {
         listContainer.setBackground(new Color(35, 35, 45));
 
         List<MapData> maps = MapData.getAllMaps();
-        for (MapData map : maps) {
+        for (MapData map : maps) 
+        {
             JButton btn = new JButton(map.name);
             btn.setMaximumSize(new Dimension(300, 50));
             btn.setFont(new Font("Verdana", Font.BOLD, 16));
@@ -35,15 +38,18 @@ public class MapSelectPanel extends JPanel {
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
             ));
 
-            btn.addMouseListener(new MouseAdapter() {
+            btn.addMouseListener(new MouseAdapter() 
+            {
                 @Override
-                public void mouseEntered(MouseEvent e) {
+                public void mouseEntered(MouseEvent e) 
+                {
                     previewMap = map;
                     btn.setBackground(new Color(100, 100, 255));
                     repaint();
                 }
                 @Override
-                public void mouseExited(MouseEvent e) {
+                public void mouseExited(MouseEvent e) 
+                {
                     btn.setBackground(new Color(60, 60, 75));
                 }
             });
@@ -60,9 +66,11 @@ public class MapSelectPanel extends JPanel {
         add(scrollPane, BorderLayout.WEST);
 
         // --- RIGHT SIDE: PREVIEW AREA ---
-        previewArea = new JPanel() {
+        previewArea = new JPanel() 
+        {
             @Override
-            protected void paintComponent(Graphics g) {
+            protected void paintComponent(Graphics g) 
+            {
                 super.paintComponent(g);
                 drawMapPreview((Graphics2D) g);
             }
@@ -78,8 +86,10 @@ public class MapSelectPanel extends JPanel {
         add(title, BorderLayout.NORTH);
     }
 
-    private void drawMapPreview(Graphics2D g2) {
-        if (previewMap == null) {
+    private void drawMapPreview(Graphics2D g2) 
+    {
+        if (previewMap == null) 
+        {
             g2.setColor(Color.GRAY);
             g2.setFont(new Font("Arial", Font.PLAIN, 20));
             g2.drawString("Hover over a map to preview", previewArea.getWidth()/2 - 120, previewArea.getHeight()/2);

@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.*;
+import java.util.ArrayList;
 
 public class Fighter 
 {
@@ -9,71 +10,6 @@ public class Fighter
     public Color color;
     public int facingDir = 1;
     public ThrowableItem heldItem = null;
-
-    public class ThrowableItem 
-    {
-        public float x, y, velX, velY;
-        public int width = 30, height = 30;
-        public boolean isHeld = false;
-        public boolean isFlying = false;
-        public Fighter thrower = null;
-        
-        public ThrowableItem(float x, float y) 
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        public void update(java.util.List<Platform> platforms, java.util.List<Fighter> fighters, java.util.List<ThrowableItem> items) 
-        {
-            if (isHeld) return; // Position is managed by the Fighter holding it
-
-            // Physics
-            velY += 0.5f; // Gravity
-            x += velX;
-            y += velY;
-
-            // Friction on ground
-            if (isFlying) velX *= 0.99f; 
-            else velX *= 0.9f;
-
-            // Platform Collision
-            for (Platform p : platforms) 
-            {
-                if (velY >= 0 && x + width > p.x && x < p.x + p.width && y + height >= p.y && y + height <= p.y + p.height + velY + 2) 
-                {
-                    y = p.y - height;
-                    velY = 0;
-                    isFlying = false; // Item is now safely on the ground
-                }
-            }
-
-            // Hit detection when flying
-            if (isFlying) 
-            {
-                for (Fighter f : fighters) 
-                {
-                    if (f != thrower && getBounds().intersects(f.getBounds())) 
-                    {
-                        f.applyKnockback(velX * 0.8f, -5);
-                        f.damage += 10;
-                        isFlying = false;
-                        velX = 0;
-                    }
-                }
-            }
-        }
-
-        public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
-
-        public void draw(Graphics2D g) 
-        {
-            g.setColor(Color.ORANGE);
-            g.fillOval((int)x, (int)y, width, height);
-            g.setColor(Color.BLACK);
-            g.drawOval((int)x, (int)y, width, height);
-        }
-    }
     
     // --- CHARACTER STATS (Applied by Gamestate) ---
     public CharacterStats stats;
@@ -155,7 +91,7 @@ public class Fighter
         this.currentAttack = AttackType.NONE;
     }
 
-    public void update(boolean[] keyMap, java.util.List<Platform> platforms, java.util.List<ThrowableItem> items) 
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms, java.util.List<ThrowableItem> items)
     {
         if (isBeingHeld) { velX = 0; velY = 0; return; }
 
