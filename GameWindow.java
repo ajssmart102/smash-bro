@@ -74,9 +74,72 @@ public class GameWindow extends JFrame implements KeyListener
             {
                 state.update();
                 gamePanel.repaint();
+
+                // --- UPDATED GAME OVER & WINNER CHECK ---
+                Fighter loser = state.getLoser();
+                if (loser != null) 
+                {
+                    gameLoop.stop(); // Stop the game engine ticking
+                    
+                    // Identify the winner based on who lost
+                    String winnerName = "Player 1";
+                    if (state.fighters.indexOf(loser) == 0) {
+                        winnerName = "Player 2"; // Player 1 is out, Player 2 wins!
+                    }
+                    
+                    showGameOverMenu(winnerName); // Switch screens and display the winner
+                }
             }
         });
         gameLoop.start();
+    }
+
+    // --- UPDATED METHOD TO SHOW THE WINNING PLAYER ---
+    private void showGameOverMenu(String winner) 
+    {
+        JPanel gameOverPanel = new JPanel();
+        gameOverPanel.setBackground(Color.BLACK);
+        gameOverPanel.setLayout(new BoxLayout(gameOverPanel, BoxLayout.Y_AXIS));
+
+        // Game Over header
+        JLabel gameOverLabel = new JLabel("GAME OVER", SwingConstants.CENTER);
+        gameOverLabel.setForeground(Color.RED);
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 60));
+        gameOverLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Winner display text
+        JLabel winnerLabel = new JLabel(winner + " WINS!", SwingConstants.CENTER);
+        // Set text color to match player UI slot styling
+        if (winner.equals("Player 1")) {
+            winnerLabel.setForeground(Color.BLUE);
+        } else {
+            winnerLabel.setForeground(Color.RED);
+        }
+        winnerLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        winnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Reset menu button
+        JButton restartButton = new JButton("Return to Character Select");
+        restartButton.setFont(new Font("Arial", Font.PLAIN, 20));
+        restartButton.setFocusPainted(false);
+        restartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        restartButton.addActionListener(e -> showCharacterMenu());
+
+        // UI Component Spacing Layout
+        gameOverPanel.add(Box.createVerticalGlue());
+        gameOverPanel.add(gameOverLabel);
+        gameOverPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        gameOverPanel.add(winnerLabel);
+        gameOverPanel.add(Box.createRigidArea(new Dimension(0, 35)));
+        gameOverPanel.add(restartButton);
+        gameOverPanel.add(Box.createVerticalGlue());
+
+        // Clean frame canvas layout swaps
+        getContentPane().removeAll();
+        add(gameOverPanel);
+        revalidate();
+        repaint();
     }
 
     @Override
