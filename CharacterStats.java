@@ -1,4 +1,5 @@
-public class CharacterStats {
+public class CharacterStats 
+{
     public String name;
     public float walkSpeed;
     public float jumpForce;
@@ -10,7 +11,8 @@ public class CharacterStats {
     public int height;
 
     // 2. Add 'int width' and 'int height' to the constructor parameters
-    public CharacterStats(String name, float walkSpeed, float jumpForce, float gravity, float weight, float damageMultiplier, int width, int height) {
+    public CharacterStats(String name, float walkSpeed, float jumpForce, float gravity, float weight, float damageMultiplier, int width, int height) 
+    {
         this.name = name;
         this.walkSpeed = walkSpeed;
         this.jumpForce = jumpForce;
