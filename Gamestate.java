@@ -3,7 +3,6 @@ import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.ArrayList;
 
 public class Gamestate 
 {
@@ -91,6 +90,9 @@ public class Gamestate
 
         // Add a test item in the middle of the stage
         throwableItems.add(new ThrowableItem(600, 300));
+
+        // Trigger the classic start
+        SoundManager.play("ready_go.wav");
     }
 
     public void update() 
@@ -107,7 +109,9 @@ public class Gamestate
             f.update(this.keys, this.platforms, this.throwableItems);
             if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
             {
-                if (f.stocks > 0) f.respawn(640, 300);
+                if (f.stocks > 0) 
+                    SoundManager.play("ko.wav");
+                    f.respawn(640, 300);
             }
         }
 
@@ -142,6 +146,7 @@ public class Gamestate
                     {
                         smashBall.isBroken = true;
                         f.hasFinalSmash = true;
+                        SoundManager.play("final_smash_ready.wav");
                         for (Fighter target : fighters) 
                         {
                             if (target != f) 
