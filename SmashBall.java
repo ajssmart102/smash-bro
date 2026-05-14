@@ -1,13 +1,15 @@
 import java.awt.*;
 import java.util.Random;
 
-public class SmashBall {
+public class SmashBall 
+{
     public float x, y, velX, velY;
     public int width = 40, height = 40;
     public int health = 100;
     public boolean isBroken = false;
 
-    public SmashBall(int x, int y) {
+    public SmashBall(int x, int y) 
+    {
         this.x = x;
         this.y = y;
         // Random starting velocity

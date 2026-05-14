@@ -1,14 +1,21 @@
 import java.awt.*;
 import java.util.*;
 
-public class Fighter {
+public class Fighter 
+{
     public float x, y, velX, velY;
     public int width = 50, height = 80;
     public String name;
     public Color color;
     public int facingDir = 1;
+<<<<<<< HEAD
 
     // --- CHARACTER STATS ---
+=======
+    public ThrowableItem heldItem = null;
+    
+    // --- CHARACTER STATS (Applied by Gamestate) ---
+>>>>>>> 7830c89f802b87cfaddf1f7fb794952bb5fc2cce
     public CharacterStats stats;
     public float walkSpeed;
     public float jumpForce;
@@ -89,8 +96,16 @@ public class Fighter {
         this.currentAttack = AttackType.NONE;
     }
 
-    public void update(boolean[] keyMap, java.util.List<Platform> platforms) {
+    public void update(boolean[] keyMap, java.util.List<Platform> platforms, java.util.List<ThrowableItem> items)
+    {
         if (isBeingHeld) { velX = 0; velY = 0; return; }
+
+        // If we are holding an item, make sure it stays in our hand
+        if (heldItem != null) 
+        {
+            heldItem.x = this.x + (facingDir == 1 ? width : -heldItem.width);
+            heldItem.y = this.y + 20;
+        }
 
         if (grabbedEnemy != null) {
             grabbedEnemy.x = this.x + (this.facingDir * 40);
@@ -149,7 +164,7 @@ public class Fighter {
             keyMap[keys[2]] = false; 
         }
 
-        handleAttackInputs(keyMap);
+        handleAttackInputs(keyMap, items);
 
         // Physics
         velY += (gravity * weight);
@@ -180,19 +195,56 @@ public class Fighter {
         }
     }
 
-    private void handleAttackInputs(boolean[] keyMap) {
-        if (keyMap[keys[6]] && attackTimer <= 0 && !isShielding) {
-            if (hasFinalSmash) {
+    private void handleAttackInputs(boolean[] keyMap, java.util.List<ThrowableItem> items)
+    {
+        // keys[5] is your GRAB key
+        if (keyMap[keys[5]] && heldItem == null && attackTimer <= 0) 
+        {
+            for (ThrowableItem item : items)
+            {
+                if (!item.isHeld && getBounds().intersects(item.getBounds())) 
+                {
+                    heldItem = item;
+                    item.isHeld = true;
+                    attackTimer = 10;
+                    return;
+                }
+            }
+        }
+
+        // keys[4] is your ATTACK key
+        // If holding an item, pressing Attack throws it
+        if (keyMap[keys[4]] && heldItem != null && attackTimer <= 0) 
+        {
+            heldItem.isHeld = false;
+            heldItem.isFlying = true;
+            heldItem.thrower = this;
+            
+            // Use your facingDir to determine the horizontal launch
+            heldItem.velX = facingDir * 15f; 
+            heldItem.velY = -4f; // Slight arc
+
+            heldItem = null;
+            attackTimer = 15; // Animation lag for the throw
+        }
+
+        if (keyMap[keys[6]] && attackTimer <= 0 && !isShielding) 
+        {
+            if (hasFinalSmash) 
+            {
                 currentAttack = AttackType.FINAL_SMASH;
                 attackTimer = 60; hasFinalSmash = false;
-            } else if (keyMap[keys[2]]) {
+            } 
+            else if (keyMap[keys[2]]) 
+            {
                 currentAttack = AttackType.UP_SPECIAL;
                 velY = -18f; attackTimer = 25; isHelpless = true;
             }
             hitTargets.clear();
         }
 
-        if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging && !isShielding) {
+        if (keyMap[keys[4]] && attackTimer <= 0 && !isCharging && !isShielding) 
+        {
             isCharging = true; chargeFrames = 0;
             boolean isDown = (keys[0] == 65) ? keyMap[83] : keyMap[40];
             if (keyMap[keys[2]]) currentAttack = AttackType.UP;
@@ -201,9 +253,11 @@ public class Fighter {
             else currentAttack = AttackType.NEUTRAL;
         }
 
-        if (isCharging) {
+        if (isCharging) 
+        {
             if (keyMap[keys[4]] && chargeFrames < MAX_CHARGE) chargeFrames++;
-            else {
+            else 
+            {
                 isCharging = false; attackTimer = 22; hitTargets.clear();
                 chargeMultiplier = 1.0f + ((float)chargeFrames / MAX_CHARGE);
             }
@@ -225,6 +279,14 @@ public class Fighter {
     private void handleThrows(boolean[] keyMap) {
         if (grabbedEnemy == null) return;
 
+        if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging && !isShielding) 
+        {
+            currentAttack = AttackType.GRAB; attackTimer = 18; hitTargets.clear();
+        }
+    }
+
+    private void handleThrows(boolean[] keyMap) 
+    {
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
         float baseDamage = 3f;
@@ -251,6 +313,8 @@ public class Fighter {
         
         if (throwTriggered) {
             // Apply knockback vectors and flat damage variables
+        if (throwTriggered && grabbedEnemy != null) 
+        {
             grabbedEnemy.applyKnockback(tx, ty);
             grabbedEnemy.damage += (baseDamage * attackDamageMultiplier); 
             grabbedEnemy.isBeingHeld = false;
@@ -271,10 +335,12 @@ public class Fighter {
 
     public Rectangle getBounds() { return new Rectangle((int)x, (int)y, width, height); }
 
-    public Rectangle getHitbox() {
+    public Rectangle getHitbox() 
+    {
         if (attackTimer <= 0 || currentAttack == AttackType.NONE || isCharging) return null; 
         int hx, hy, hw, hh;
-        switch (currentAttack) {
+        switch (currentAttack) 
+        {
             case GRAB: hx = (facingDir == 1) ? (int)x + width : (int)x - 35; hy = (int)y + 20; hw = 35; hh = 40; break;
             case UP: hx = (int)x - 15; hy = (int)y - 50; hw = width + 30; hh = 60; break;
             case DOWN: hx = (int)x - 10; hy = (int)y + height; hw = width + 20; hh = 40; break;
@@ -286,13 +352,16 @@ public class Fighter {
         return new Rectangle(hx, hy, hw, hh);
     }
 
-    public void draw(Graphics2D g) {
-        if (isShielding) {
+    public void draw(Graphics2D g) 
+    {
+        if (isShielding) 
+        {
             g.setColor(new Color(100, 200, 255, 120));
             g.fillOval((int)x - 15, (int)y - 5, width + 30, height + 10);
         }
 
-        if (hasFinalSmash) {
+        if (hasFinalSmash) 
+        {
             g.setColor(new Color(255, 255, 0, 50));
             g.fillOval((int)x - 10, (int)y - 10, width + 20, height + 20);
         }
@@ -300,7 +369,8 @@ public class Fighter {
         g.setColor(isHelpless ? Color.DARK_GRAY : color);
         g.fillRoundRect((int)x, (int)y, width, height, 15, 15);
 
-        if (isCharging) {
+        if (isCharging) 
+        {
             g.setColor(Color.WHITE);
             g.fillRect((int)x, (int)y - 15, (int)((float)width * ((float)chargeFrames / MAX_CHARGE)), 6);
             g.setColor(Color.BLACK);
@@ -308,7 +378,8 @@ public class Fighter {
         }
 
         Rectangle hb = getHitbox();
-        if (hb != null) {
+        if (hb != null) 
+        {
             if (currentAttack == AttackType.FINAL_SMASH) g.setColor(new Color(255, 255, 0, 180));
             else if (currentAttack == AttackType.GRAB) g.setColor(new Color(0, 255, 255, 150));
             else g.setColor(new Color(255, 255, 0, 130)); 

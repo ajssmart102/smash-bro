@@ -3,8 +3,10 @@ import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.ArrayList;
 
-public class Gamestate {
+public class Gamestate 
+{
     public List<Fighter> fighters = new ArrayList<>();
     public List<Platform> platforms = new ArrayList<>();
     public List<HitEffect> effects = new ArrayList<>();
@@ -14,16 +16,22 @@ public class Gamestate {
 
     public SmashBall smashBall;
     private int respawnTimer = 0;
-    private final int RESPAWN_DELAY = 600; 
+    private final int RESPAWN_DELAY = 600;
 
-    public Gamestate() {
+    public List<ThrowableItem> throwableItems = new ArrayList<>();
+
+    public Gamestate() 
+    {
         loadCharacterData();
     }
 
-    private void loadCharacterData() {
-        try (BufferedReader br = new BufferedReader(new FileReader("roster.txt"))) {
+    private void loadCharacterData() 
+    {
+        try (BufferedReader br = new BufferedReader(new FileReader("roster.txt"))) 
+        {
             String line;
-            while ((line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null) 
+            {
                 String[] v = line.split(",");
                 if (v.length < 8) continue;
 
@@ -38,28 +46,37 @@ public class Gamestate {
 
                 characterRegistry.put(name, new CharacterStats(name, ws, jf, gr, wt, dm, w, h));
             }
-        } catch (Exception e) {
+        } catch (Exception e) 
+        {
             System.err.println("Could not load roster.txt: " + e.getMessage());
             characterRegistry.put("Standard", new CharacterStats("Standard", 7.0f, -14f, 0.5f, 1.0f, 1.0f, 50, 80));
         }
     }
 
-    public CharacterStats getStatsFor(String name) {
-        if (characterRegistry.containsKey(name)) {
+    public CharacterStats getStatsFor(String name) 
+    {
+        if (characterRegistry.containsKey(name)) 
+        {
             return characterRegistry.get(name);
-        } else {
+        } 
+        else 
+        {
             return characterRegistry.get("Standard");
         }
     }
 
-    public void setupSession(String p1Char, String p2Char, MapData chosenMap) {
+    public void setupSession(String p1Char, String p2Char, MapData chosenMap)
+    {
         fighters.clear();
         platforms.clear();
         effects.clear();
 
-        if (chosenMap != null && chosenMap.platforms != null) {
+        if (chosenMap != null && chosenMap.platforms != null) 
+        {
             this.platforms.addAll(chosenMap.platforms);
-        } else {
+        } 
+        else 
+        {
             platforms.add(new Platform(200, 500, 880, 30)); 
         }
         
@@ -71,14 +88,25 @@ public class Gamestate {
         
         fighters.add(player1);
         fighters.add(player2);
+
+        // Add a test item in the middle of the stage
+        throwableItems.add(new ThrowableItem(600, 300));
     }
 
-    public void update() {
+    public void update() 
+    {
         for (Platform p : platforms) p.update();
 
-        for (Fighter f : fighters) {
-            f.update(keys, platforms);
-            if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) {
+        for (ThrowableItem item : throwableItems)
+        {
+            item.update(platforms, fighters);
+        }
+
+        for (Fighter f : fighters) 
+        {
+            f.update(this.keys, this.platforms, this.throwableItems);
+            if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
+            {
                 if (f.stocks > 0) f.respawn(640, 300);
             }
         }
@@ -90,24 +118,34 @@ public class Gamestate {
         effects.removeIf(e -> e.life <= 0);
     }
 
-    private void updateSmashBall() {
-        if (smashBall == null || smashBall.isBroken) {
+    private void updateSmashBall() 
+    {
+        if (smashBall == null || smashBall.isBroken) 
+        {
             respawnTimer++;
-            if (respawnTimer >= RESPAWN_DELAY) {
+            if (respawnTimer >= RESPAWN_DELAY) 
+            {
                 smashBall = new SmashBall(640, 200);
                 respawnTimer = 0;
             }
-        } else {
+        } 
+        else 
+        {
             smashBall.update(1280, 720); 
-            for (Fighter f : fighters) {
+            for (Fighter f : fighters) 
+            {
                 Rectangle hb = f.getHitbox();
                 if (hb != null && hb.intersects(smashBall.getHitbox())) {
+                    // FIXED: Using stats.dm to match CharacterStats field
                     smashBall.health -= (2 * f.stats.dm); 
-                    if (smashBall.health <= 0) {
+                    if (smashBall.health <= 0) 
+                    {
                         smashBall.isBroken = true;
                         f.hasFinalSmash = true;
-                        for (Fighter target : fighters) {
-                            if (target != f) {
+                        for (Fighter target : fighters) 
+                        {
+                            if (target != f) 
+                            {
                                 float dir = (target.x > smashBall.x) ? 18f : -18f;
                                 target.applyKnockback(dir, -12f);
                                 effects.add(new HitEffect((int)target.x, (int)target.y));
@@ -119,14 +157,19 @@ public class Gamestate {
         }
     }
 
-    private void updateCombat() {
-        for (Fighter attacker : fighters) {
+    private void updateCombat() 
+    {
+        for (Fighter attacker : fighters) 
+        {
             if (attacker.isBeingHeld || attacker.ledgeGrabbed) continue;
             Rectangle hb = attacker.getHitbox();
-            if (hb != null) {
-                for (Fighter victim : fighters) {
+            if (hb != null) 
+            {
+                for (Fighter victim : fighters) 
+                {
                     if (attacker == victim) continue;
-                    if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) {
+                    if (hb.intersects(victim.getBounds()) && !attacker.hitTargets.contains(victim)) 
+                    {
                         handleHit(attacker, victim);
                     }
                 }
@@ -134,15 +177,18 @@ public class Gamestate {
         }
     }
 
-    private void handleHit(Fighter attacker, Fighter victim) {
-        if (attacker.currentAttack == Fighter.AttackType.GRAB) {
+    private void handleHit(Fighter attacker, Fighter victim) 
+    {
+        if (attacker.currentAttack == Fighter.AttackType.GRAB) 
+        {
             attacker.grabbedEnemy = victim;
             victim.isBeingHeld = true;
             victim.isShielding = false;
             return;
         } 
         
-        if (victim.isShielding && attacker.currentAttack != Fighter.AttackType.FINAL_SMASH) {
+        if (victim.isShielding && attacker.currentAttack != Fighter.AttackType.FINAL_SMASH) 
+        {
             attacker.velX = -attacker.facingDir * 7; 
             return;
         }
@@ -152,28 +198,43 @@ public class Gamestate {
         float launchX = 0;
         float launchY = 0;
 
-        if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) {
+        if (attacker.currentAttack == Fighter.AttackType.FINAL_SMASH) 
+        {
             damageDealt = 50;
-            launchY = -22.0f;
-            launchX = attacker.facingDir * 20.0f;
+            launchY = -25.0f;
+            launchX = attacker.facingDir * 35.0f;
         } else {
-            // Standard Attack Calculation
+            // 1. Calculate Standard Damage
             float baseDamage = 10.0f;
             damageDealt = baseDamage * attacker.stats.dm * attacker.chargeMultiplier;
             
+            // 2. Base Knockback Power scaling
+            float power = 5 + (victim.damage / 8);
+            
+            // 3. THE 300% DEATH MULTIPLIER
+            // If victim is at or above 250%, we multiply launch power significantly
+            if (victim.damage >= 250f) {
+                power *= 5.0f;
+            }
+
             victim.ledgeGrabbed = false;
             
             if (attacker.currentAttack == Fighter.AttackType.DOWN) {
-                launchX = attacker.facingDir * 2; // Minimal horizontal
-                launchY = 14.0f; // Spike effect
+                launchX = attacker.facingDir * 2; 
+                launchY = Math.min(power, 45.0f); // Spike down
             } else {
-                launchX = attacker.facingDir * (5 + victim.damage/8);
-                launchY = -10.0f;
+                // Horizontal launch: Capped at 60.0f for engine stability
+                launchX = attacker.facingDir * Math.min(power, 60.0f);
+                launchY = -12.0f;
             }
         }
 
-        // Apply results
+        // --- Apply Results & Hard Cap at 300% ---
         victim.damage += damageDealt;
+        if (victim.damage > 300f) {
+            victim.damage = 300f;
+        }
+
         victim.applyKnockback(launchX, launchY);
         effects.add(new HitEffect((int)victim.x, (int)victim.y));
         attacker.hitTargets.add(victim);
