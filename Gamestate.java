@@ -139,7 +139,8 @@ public class Gamestate
             for (Fighter f : fighters) 
             {
                 Rectangle hb = f.getHitbox();
-                if (hb != null && hb.intersects(smashBall.getHitbox())) {
+                if (hb != null && hb.intersects(smashBall.getHitbox())) 
+                {
                     // FIXED: Using stats.dm to match CharacterStats field
                     smashBall.health -= (2 * f.stats.dm); 
                     if (smashBall.health <= 0) 
