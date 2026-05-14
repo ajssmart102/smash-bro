@@ -105,9 +105,14 @@ public class Gamestate
         for (Fighter f : fighters) 
         {
             f.update(this.keys, this.platforms, this.throwableItems);
+            
+            // Blast zone checking (Off-screen detection)
             if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
             {
-                if (f.stocks > 0) f.respawn(640, 300);
+                if (f.stocks > 0) 
+                {
+                    f.respawn(640, 300);
+                }
             }
         }
 
@@ -136,7 +141,6 @@ public class Gamestate
             {
                 Rectangle hb = f.getHitbox();
                 if (hb != null && hb.intersects(smashBall.getHitbox())) {
-                    // FIXED: Using stats.dm to match CharacterStats field
                     smashBall.health -= (2 * f.stats.dm); 
                     if (smashBall.health <= 0) 
                     {
@@ -212,7 +216,6 @@ public class Gamestate
             float power = 5 + (victim.damage / 8);
             
             // 3. THE 300% DEATH MULTIPLIER
-            // If victim is at or above 250%, we multiply launch power significantly
             if (victim.damage >= 250f) {
                 power *= 5.0f;
             }
@@ -223,7 +226,6 @@ public class Gamestate
                 launchX = attacker.facingDir * 2; 
                 launchY = Math.min(power, 45.0f); // Spike down
             } else {
-                // Horizontal launch: Capped at 60.0f for engine stability
                 launchX = attacker.facingDir * Math.min(power, 60.0f);
                 launchY = -12.0f;
             }
@@ -238,5 +240,21 @@ public class Gamestate
         victim.applyKnockback(launchX, launchY);
         effects.add(new HitEffect((int)victim.x, (int)victim.y));
         attacker.hitTargets.add(victim);
+    }
+
+    /**
+     * Loops through the match's fighters to find who ran out of stocks.
+     * @return The Fighter that lost (0 stocks sitting in the blast zone), or null if the match is still active.
+     */
+    public Fighter getLoser() 
+    {
+        for (Fighter f : fighters) 
+        {
+            if (f.stocks <= 0) 
+            {
+                return f;
+            }
+        }
+        return null;
     }
 }
