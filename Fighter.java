@@ -8,12 +8,12 @@ public class Fighter {
     public Color color;
     public int facingDir = 1;
 
-    // --- CHARACTER STATS (Applied by Gamestate) ---
+    // --- CHARACTER STATS ---
     public CharacterStats stats;
     public float walkSpeed;
     public float jumpForce;
     public float gravity;
-    public float weight; // Multiplier for gravity/launch speed
+    public float weight; 
     public float attackDamageMultiplier;
 
     public float maxHealth = 100f;
@@ -40,6 +40,9 @@ public class Fighter {
     public boolean isBeingHeld = false;
     public boolean isShielding = false;
 
+    // --- INPUT SAFETY STATE ---
+    private boolean grabKeyWasPressed = false; // Tracks if grab button is held
+
     // --- CHARGING ---
     public boolean isCharging = false;
     public int chargeFrames = 0;
@@ -49,20 +52,18 @@ public class Fighter {
     protected int[] keys; 
 
     public Fighter(float x, float y, CharacterStats stats, Color color, int[] keys) {
-    this.x = x; 
-    this.y = y; 
-    this.color = color; 
-    this.keys = keys;
-
-    this.stats = stats;
-    
-    // Now Java knows what 'stats' is!
-    this.name = stats.name;
-    this.walkSpeed = stats.walkSpeed;
-    this.jumpForce = stats.jumpForce;
-    this.gravity = stats.gravity;
-    this.weight = stats.weight;
-    this.attackDamageMultiplier = stats.dm;
+        this.x = x; 
+        this.y = y; 
+        this.color = color; 
+        this.keys = keys;
+        this.stats = stats;
+        
+        this.name = stats.name;
+        this.walkSpeed = stats.walkSpeed;
+        this.jumpForce = stats.jumpForce;
+        this.gravity = stats.gravity;
+        this.weight = stats.weight;
+        this.attackDamageMultiplier = stats.dm;
     }
 
     public void applyKnockback(float launchX, float launchY) {
@@ -94,28 +95,33 @@ public class Fighter {
         if (grabbedEnemy != null) {
             grabbedEnemy.x = this.x + (this.facingDir * 40);
             grabbedEnemy.y = this.y;
+            
+            // Only handle throws inside here
             handleThrows(keyMap);
-            if (keyMap[keys[0]]) { x -= 2; facingDir = -1; }
-            if (keyMap[keys[1]]) { x += 2; facingDir = 1; }
+            
+            // If they are still grabbed after checking throws, allow minor shuffling
+            if (grabbedEnemy != null) {
+                if (keyMap[keys[0]]) { x -= 1.0f; facingDir = -1; }
+                if (keyMap[keys[1]]) { x += 1.0f; facingDir = 1; }
+            }
+            // Maintain tracking of grab key while holding someone so release doesn't auto-regrab
+            if (!keyMap[keys[5]]) {
+                grabKeyWasPressed = false;
+            }
             return; 
         }
 
-        // --- LEDGE LOGIC ---
+        // Ledge logic
         if (ledgeGrabbed) {
             velX = 0; velY = 0;
-            // Jump up from ledge
             if (keyMap[keys[2]]) { 
                 velY = jumpForce; 
                 ledgeGrabbed = false; 
                 isHelpless = false; 
-                jumpsLeft = maxJumps - 1; // Leave 1 jump left for recovery
+                jumpsLeft = maxJumps - 1;
             }
-            // Drop down from ledge
             boolean isDown = (keys[0] == 65) ? keyMap[83] : keyMap[40];
-            if (isDown) {
-                ledgeGrabbed = false;
-                velY = 2; // Small nudge down
-            }
+            if (isDown) { ledgeGrabbed = false; velY = 2; }
             return;
         }
 
@@ -150,23 +156,18 @@ public class Fighter {
         x += velX; 
         y += velY;
 
-        // --- COLLISION LOOP ---
         for (Platform p : platforms) {
-            // Ledge Grabbing (Only if Platform is Main Stage)
             if (velY > 0 && !ledgeGrabbed && p.isMainStage) {
-                // Right side of fighter to left ledge
                 if (Math.abs(x + width - p.x) < 20 && Math.abs(y - p.y) < 30) { 
                     ledgeGrabbed = true; x = p.x - width; y = p.y; 
                     isHelpless = false; return; 
                 }
-                // Left side of fighter to right ledge
                 if (Math.abs(x - (p.x + p.width)) < 20 && Math.abs(y - p.y) < 30) { 
                     ledgeGrabbed = true; x = p.x + p.width; y = p.y; 
                     isHelpless = false; return; 
                 }
             }
 
-            // Standard Floor Collision
             if (velY >= 0 && x + width > p.x && x < p.x + p.width && y + height >= p.y && y + height <= p.y + p.height + velY + 2) {
                 y = p.y - height; velY = 0; jumpsLeft = maxJumps; isHelpless = false;
                 x += p.velX; y += p.velY; 
@@ -208,27 +209,63 @@ public class Fighter {
             }
         }
 
-        if (keyMap[keys[5]] && attackTimer <= 0 && !isCharging && !isShielding) {
-            currentAttack = AttackType.GRAB; attackTimer = 18; hitTargets.clear();
+        // GRAB INPUT FILTERING:
+        if (keyMap[keys[5]]) {
+            if (!grabKeyWasPressed && attackTimer <= 0 && !isCharging && !isShielding && grabbedEnemy == null) {
+                currentAttack = AttackType.GRAB; 
+                attackTimer = 18; 
+                hitTargets.clear(); 
+            }
+            grabKeyWasPressed = true;
+        } else {
+            grabKeyWasPressed = false;
         }
     }
 
     private void handleThrows(boolean[] keyMap) {
+        if (grabbedEnemy == null) return;
+
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
-        boolean isDown = (keys[0] == 65) ? keyMap[83] : keyMap[40];
-
-        if (keyMap[keys[0]]) { tx = -14; ty = -4; throwTriggered = true; }
-        else if (keyMap[keys[1]]) { tx = 14; ty = -4; throwTriggered = true; }
-        else if (keyMap[keys[2]]) { tx = 0; ty = -18; throwTriggered = true; }
-        else if (isDown) { tx = 0; ty = 14; throwTriggered = true; }
+        float baseDamage = 3f;
         
-        if (throwTriggered && grabbedEnemy != null) {
+        int downKeyIndex = (keys[0] == 65) ? 83 : 40; 
+
+        if (keyMap[keys[0]]) { // Throw Left/Back
+            tx = -14; ty = -4; 
+            throwTriggered = true; 
+        }
+        else if (keyMap[keys[1]]) { // Throw Right/Front
+            tx = 14; ty = -4; 
+            throwTriggered = true; 
+        }
+        else if (keyMap[keys[2]]) { // Throw Up
+            tx = 0; ty = -18; 
+            throwTriggered = true; 
+        }
+        else if (keyMap[downKeyIndex]) { // SLAM DOWN (S key)
+            tx = 0; ty = 22; // High slam physics vector down
+            baseDamage = 5f; 
+            throwTriggered = true; 
+        }
+        
+        if (throwTriggered) {
+            // Apply knockback vectors and flat damage variables
             grabbedEnemy.applyKnockback(tx, ty);
-            grabbedEnemy.damage += (8 * attackDamageMultiplier);
+            grabbedEnemy.damage += (baseDamage * attackDamageMultiplier); 
             grabbedEnemy.isBeingHeld = false;
-            grabbedEnemy = null;
-            attackTimer = 15;
+            
+            // Release entirely: clear reference pointers immediately
+            grabbedEnemy = null; 
+            attackTimer = 20; 
+            currentAttack = AttackType.NONE;
+
+            // Clear input registries to enforce single-press behavior
+            keyMap[keys[0]] = false;
+            keyMap[keys[1]] = false;
+            keyMap[keys[2]] = false;
+            keyMap[downKeyIndex] = false;
+            keyMap[keys[5]] = false; // Intentionally clear the grab key itself
         }
     }
 
