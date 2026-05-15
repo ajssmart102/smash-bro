@@ -111,6 +111,9 @@ public class Gamestate
             {
                 if (f.stocks > 0) 
                     SoundManager.play("ko.wav");
+                    // OPTIONAL: The "Smash Freeze" 
+                    // This pauses the logic for 100ms to give the hit more 'weight'
+                    try { Thread.sleep(100); } catch (Exception e) {}
                     f.respawn(640, 300);
             }
         }
