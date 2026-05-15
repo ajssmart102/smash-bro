@@ -91,8 +91,36 @@ public class Gamestate
         // Add a test item in the middle of the stage
         throwableItems.add(new ThrowableItem(600, 300));
 
-        // Trigger the classic start
-        SoundManager.play("ready_go.wav");
+        new Thread(() -> 
+        {
+            try 
+            {
+                // Wait 500ms so the window has time to pop up/render
+                Thread.sleep(500);
+
+                // 1. Announce P1
+                SoundManager.announce(p1Char);
+                Thread.sleep(1000);
+                
+                // 2. "VS"
+                SoundManager.announce("vs");
+                Thread.sleep(800);
+                
+                // 3. Announce P2
+                SoundManager.announce(p2Char);
+                Thread.sleep(1200);
+
+                // 4. Ready... GO!
+                SoundManager.announce("ready");
+                Thread.sleep(1000);
+                SoundManager.announce("go");
+                
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public void update() 
@@ -110,7 +138,7 @@ public class Gamestate
             if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
             {
                 if (f.stocks > 0) 
-                    SoundManager.play("ko.wav");
+                    SoundManager.announce("ko");
                     // OPTIONAL: The "Smash Freeze" 
                     // This pauses the logic for 100ms to give the hit more 'weight'
                     try { Thread.sleep(100); } catch (Exception e) {}
