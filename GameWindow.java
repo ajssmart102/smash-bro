@@ -3,14 +3,16 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class GameWindow extends JFrame implements KeyListener {
+public class GameWindow extends JFrame implements KeyListener 
+{
     private Gamestate state;
     private GamePanel gamePanel;
     private CharacterSelectPanel menuPanel;
     private MapSelectPanel mapPanel;
     private Timer gameLoop;
 
-    public GameWindow() {
+    public GameWindow() 
+    {
         setTitle("Java Smash");
         setSize(1280, 720);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -21,9 +23,11 @@ public class GameWindow extends JFrame implements KeyListener {
         setVisible(true);
     }
 
-    private void showCharacterMenu() {
+    private void showCharacterMenu() 
+    {
         // Updated to handle the BiConsumer (p1, p2)
-        menuPanel = new CharacterSelectPanel((p1Choice, p2Choice) -> {
+        menuPanel = new CharacterSelectPanel((p1Choice, p2Choice) -> 
+        {
             showMapMenu(p1Choice, p2Choice); 
         });
         
@@ -64,13 +68,78 @@ public class GameWindow extends JFrame implements KeyListener {
         gamePanel.requestFocusInWindow();
 
         if (gameLoop != null) gameLoop.stop();
-        gameLoop = new Timer(16, e -> {
-            if (state != null) {
+        gameLoop = new Timer(16, e -> 
+        {
+            if (state != null) 
+            {
                 state.update();
                 gamePanel.repaint();
+
+                // --- UPDATED GAME OVER & WINNER CHECK ---
+                Fighter loser = state.getLoser();
+                if (loser != null) 
+                {
+                    gameLoop.stop(); // Stop the game engine ticking
+                    
+                    // Identify the winner based on who lost
+                    String winnerName = "Player 1";
+                    if (state.fighters.indexOf(loser) == 0) {
+                        winnerName = "Player 2"; // Player 1 is out, Player 2 wins!
+                    }
+                    
+                    showGameOverMenu(winnerName); // Switch screens and display the winner
+                }
             }
         });
         gameLoop.start();
+    }
+
+    // --- UPDATED METHOD TO SHOW THE WINNING PLAYER ---
+    private void showGameOverMenu(String winner) 
+    {
+        JPanel gameOverPanel = new JPanel();
+        gameOverPanel.setBackground(Color.BLACK);
+        gameOverPanel.setLayout(new BoxLayout(gameOverPanel, BoxLayout.Y_AXIS));
+
+        // Game Over header
+        JLabel gameOverLabel = new JLabel("GAME OVER", SwingConstants.CENTER);
+        gameOverLabel.setForeground(Color.RED);
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 60));
+        gameOverLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Winner display text
+        JLabel winnerLabel = new JLabel(winner + " WINS!", SwingConstants.CENTER);
+        // Set text color to match player UI slot styling
+        if (winner.equals("Player 1")) {
+            winnerLabel.setForeground(Color.BLUE);
+        } else {
+            winnerLabel.setForeground(Color.RED);
+        }
+        winnerLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        winnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Reset menu button
+        JButton restartButton = new JButton("Return to Character Select");
+        restartButton.setFont(new Font("Arial", Font.PLAIN, 20));
+        restartButton.setFocusPainted(false);
+        restartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        restartButton.addActionListener(e -> showCharacterMenu());
+
+        // UI Component Spacing Layout
+        gameOverPanel.add(Box.createVerticalGlue());
+        gameOverPanel.add(gameOverLabel);
+        gameOverPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        gameOverPanel.add(winnerLabel);
+        gameOverPanel.add(Box.createRigidArea(new Dimension(0, 35)));
+        gameOverPanel.add(restartButton);
+        gameOverPanel.add(Box.createVerticalGlue());
+
+        // Clean frame canvas layout swaps
+        getContentPane().removeAll();
+        add(gameOverPanel);
+        revalidate();
+        repaint();
     }
 
     @Override
