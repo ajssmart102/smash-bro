@@ -42,7 +42,7 @@ public class Fighter
     public boolean isShielding = false;
 
     // --- ITEM SYSTEM INTEGRATION ---
-    public Object heldItem = null;             // Replace 'Object' with your specific Item class if applicable
+    public ThrowableItem heldItem = null; // Changed from Object to ThrowableItem for compiler type-safety
     public boolean isHoldingItem = false;
 
     // --- INPUT SAFETY STATE ---
@@ -223,6 +223,7 @@ public class Fighter
                 {
                     heldItem = item;
                     item.isHeld = true;
+                    isHoldingItem = true; // Set this true since we successfully picked it up
                     attackTimer = 10;
                     return;
                 }
@@ -242,6 +243,7 @@ public class Fighter
             heldItem.velY = -4f; // Slight arc
 
             heldItem = null;
+            isHoldingItem = false;
             attackTimer = 15; // Animation lag for the throw
         }
 
@@ -317,9 +319,10 @@ public class Fighter
 
         boolean throwTriggered = false;
         float tx = 0, ty = 0;
-        float baseDamage = 3f;
         
+        // Dynamically compute downKeyIndex matching update logic
         int downKeyIndex = (keys[0] == 65) ? 83 : 40; 
+        boolean isDown = keyMap[downKeyIndex]; // Fixed the missing 'isDown' definition error
 
         if (keyMap[keys[0]]) { 
             tx = -14; ty = -4; 
@@ -350,7 +353,7 @@ public class Fighter
     }
 
     // --- ITEM UTILITY FUNCTIONS ---
-    public void pickUpItem(Object item) {
+    public void pickUpItem(ThrowableItem item) { // Type updated to match ThrowableItem
         if (!isHoldingItem && grabbedEnemy == null) {
             this.heldItem = item;
             this.isHoldingItem = true;
@@ -359,7 +362,6 @@ public class Fighter
 
     public void dropItem() {
         if (isHoldingItem && heldItem != null) {
-            // Logic to let item fall flat back onto stage physics goes here
             this.heldItem = null;
             this.isHoldingItem = false;
         }
@@ -367,12 +369,9 @@ public class Fighter
 
     private void throwItem(float launchX, float launchY) {
         if (isHoldingItem && heldItem != null) {
-            // Call item velocity vectors here based on game engine design
-            // e.g., heldItem.launch(launchX, launchY);
-            
             this.heldItem = null;
             this.isHoldingItem = false;
-            this.attackTimer = 15; // Brief action lag for throwing an item
+            this.attackTimer = 15; 
         }
     }
 
