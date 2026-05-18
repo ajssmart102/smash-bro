@@ -10,6 +10,7 @@ public class Gamestate
     public List<Platform> platforms = new ArrayList<>();
     public List<HitEffect> effects = new ArrayList<>();
     public boolean[] keys = new boolean[65536];
+    public boolean matchStarted = false; // Prevents movement during the countdown
 
     private Map<String, CharacterStats> characterRegistry = new HashMap<>();
 
@@ -91,7 +92,10 @@ public class Gamestate
         // Add a test item in the middle of the stage
         throwableItems.add(new ThrowableItem(600, 300));
 
-        new Thread(() -> 
+        // Reset the flag so players are locked at the start of a new session
+        this.matchStarted = false;
+        
+        new Thread(() ->
         {
             try 
             {
@@ -114,6 +118,7 @@ public class Gamestate
                 SoundManager.announce("ready");
                 Thread.sleep(1000);
                 SoundManager.announce("go");
+                this.matchStarted = true; // <--- UNLOCKS THE GAMEPLAY!
                 
             }
             catch (InterruptedException e)
@@ -123,34 +128,37 @@ public class Gamestate
         }).start();
     }
 
-    public void update() 
+    public void update()
     {
         for (Platform p : platforms) p.update();
 
-        for (ThrowableItem item : throwableItems)
+        if(matchStarted)
         {
-            item.update(platforms, fighters);
-        }
-
-        for (Fighter f : fighters) 
-        {
-            f.update(this.keys, this.platforms, this.throwableItems);
-            if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
+            for (ThrowableItem item : throwableItems)
             {
-                if (f.stocks > 0) 
-                    SoundManager.announce("ko");
-                    // OPTIONAL: The "Smash Freeze" 
-                    // This pauses the logic for 100ms to give the hit more 'weight'
-                    try { Thread.sleep(100); } catch (Exception e) {}
-                    f.respawn(640, 300);
+                item.update(platforms, fighters);
             }
+
+            for (Fighter f : fighters) 
+            {
+                f.update(this.keys, this.platforms, this.throwableItems);
+                if (f.y > 1000 || f.y < -800 || f.x < -400 || f.x > 1680) 
+                {
+                    if (f.stocks > 0) 
+                        SoundManager.announce("ko");
+                        // OPTIONAL: The "Smash Freeze" 
+                        // This pauses the logic for 100ms to give the hit more 'weight'
+                        try { Thread.sleep(100); } catch (Exception e) {}
+                        f.respawn(640, 300);
+                }
+            }
+
+            updateSmashBall();
+            updateCombat();
+
+            for (HitEffect e : effects) e.life--; 
+            effects.removeIf(e -> e.life <= 0);
         }
-
-        updateSmashBall();
-        updateCombat();
-
-        for (HitEffect e : effects) e.life--; 
-        effects.removeIf(e -> e.life <= 0);
     }
 
     private void updateSmashBall() 
